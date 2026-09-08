@@ -1,0 +1,333 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StoryMapper v0.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+</head><body>
+
+<div id="app">
+  <div id="topbar">
+    <div id="brand">
+      <span class="mark">StoryMapper</span>
+    </div>
+    <nav id="placeholder-nav" aria-hidden="true">
+      <span class="nav-pill" id="nav-library-pill">Story</span>
+      <span class="nav-pill" id="nav-world-pill">World</span>
+      <span class="nav-pill">Settings</span>
+    </nav>
+    <span class="save-status" id="save-status"></span>
+    <div id="topbar-actions">
+      <button class="btn" id="add-card-btn">+ Page</button>
+      <div class="dropdown" id="options-dropdown">
+        <button class="btn" id="options-btn" type="button" aria-haspopup="true" aria-expanded="false">Options <span class="caret">&#9662;</span></button>
+        <div class="dropdown-menu" id="options-menu" hidden>
+          <button type="button" class="dropdown-item" id="relayout-btn" title="Rearrange every card by following the arrows from the start, discarding their current positions">Re-arrange by flow</button>
+          <button type="button" class="dropdown-item dropdown-item-danger" id="clear-cross-btn" title="Remove every cross-quest arrow in this questline (its member quests' own pages and arrows are untouched)">Clear cross-quest arrows</button>
+          <button type="button" class="dropdown-item" id="trash-btn" title="Restore a deleted page, quest, or questline">Restore&hellip;</button>
+        </div>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark theme" title="Switch theme">
+        <svg class="track-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"></path></svg>
+        <svg class="track-icon moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.4 14.7A8.3 8.3 0 0 1 9.3 3.6a8.6 8.6 0 1 0 11.1 11.1Z"></path></svg>
+        <span class="thumb" id="theme-thumb"></span>
+      </button>
+    </div>
+  </div>
+
+  <div id="quest-pill"></div>
+
+  <div id="viewport">
+    <div id="world">
+      <svg id="wires"><defs>
+        <marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--interact)"></path>
+        </marker>
+        <marker id="arrowhead-return" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--ink-faint)"></path>
+        </marker>
+      </defs></svg>
+      <div id="sections-layer"></div>
+      <div id="cards-layer"></div>
+    </div>
+    <div id="zoom-ctl">
+      <button id="zoom-out" title="Zoom out">&minus;</button>
+      <span id="zoom-pct" title="Reset to 100%">100%</span>
+      <button id="zoom-in" title="Zoom in">+</button>
+    </div>
+    <div id="marquee-box"></div>
+  </div>
+
+  <div id="library-view">
+    <div id="library-inner">
+      <h1>Story</h1>
+      <div class="library-section">
+        <div class="library-section-head">
+          <h2>Questlines</h2>
+          <div class="actions">
+            <button class="btn" id="import-questline-btn" title="Import a questline folder of QuestLines quest .json files that share a QuestlineId">Import questline (folder)&hellip;</button>
+            <button class="btn" id="new-questline-btn">+ New questline</button>
+          </div>
+        </div>
+        <div id="questline-groups"></div>
+      </div>
+      <div class="library-section">
+        <div class="library-section-head">
+          <h2>Standalone quests</h2>
+          <button class="btn" id="import-quest-btn" title="Import a quest .md draft or a QuestLines quest .json file">Import quest (.md/.json)&hellip;</button>
+        </div>
+        <div id="standalone-quests"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="world-view">
+    <div id="world-inner">
+      <div id="world-directory">
+        <h1>World</h1>
+
+        <div class="library-section" id="world-section-factions">
+          <div class="library-section-head">
+            <h2>Factions</h2>
+            <button class="btn" type="button" data-role="add-world-item" data-category="factions">+ New faction</button>
+          </div>
+          <div id="world-list-factions"></div>
+        </div>
+
+        <div class="library-section" id="world-section-npcs">
+          <div class="library-section-head">
+            <h2>NPCs</h2>
+            <button class="btn" type="button" data-role="add-world-item" data-category="npcs">+ New NPC</button>
+          </div>
+          <div id="world-list-npcs"></div>
+        </div>
+
+        <div class="library-section" id="world-section-locations">
+          <div class="library-section-head">
+            <h2>Locations</h2>
+            <button class="btn" type="button" data-role="add-world-item" data-category="locations">+ New location</button>
+          </div>
+          <div id="world-list-locations"></div>
+        </div>
+      </div>
+
+      <div id="world-detail" hidden>
+        <div class="world-breadcrumb">
+          <button type="button" id="world-detail-crumb-world">World</button>
+          <span>/</span>
+          <button type="button" id="world-detail-crumb-category" title="Back to this section in World"></button>
+          <span>/</span>
+          <span id="world-detail-crumb-name"></span>
+        </div>
+
+        <div id="world-detail-view-mode">
+          <div class="world-detail-header">
+            <div>
+              <p class="world-detail-kind" id="world-detail-kind"></p>
+              <h1 class="world-detail-title" id="world-detail-title"></h1>
+            </div>
+            <button class="icon-btn edit-btn" id="world-detail-edit-btn" type="button" title="Edit" aria-label="Edit">&#9998;</button>
+          </div>
+          <div id="world-detail-fields"></div>
+        </div>
+
+        <div id="world-detail-edit-mode" hidden>
+          <div id="world-detail-edit-fields"></div>
+          <div class="modal-actions">
+            <button class="btn quiet-danger" type="button" id="world-detail-delete-btn">Delete</button>
+            <div class="right">
+              <button class="btn" type="button" id="world-detail-cancel-btn">Cancel</button>
+              <button class="btn primary" type="button" id="world-detail-save-btn">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept=".md,.txt,.json">
+  <input type="file" id="folder-input" webkitdirectory directory multiple>
+</div>
+
+<div id="modal-backdrop">
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Edit page</h2>
+    <div class="modal-row">
+      <label for="modal-name">NPC name</label>
+      <input type="text" id="modal-name">
+    </div>
+    <div class="modal-row pageid">
+      <label for="modal-pageid">Page ID</label>
+      <input type="text" id="modal-pageid">
+    </div>
+    <div class="modal-row">
+      <label for="modal-dialog">Dialog</label>
+      <textarea id="modal-dialog" rows="3"></textarea>
+    </div>
+    <div class="modal-row">
+      <label for="modal-journaltext">JournalText</label>
+      <textarea id="modal-journaltext" rows="2"></textarea>
+    </div>
+    <div class="modal-row">
+      <label for="modal-responses">Response(s)</label>
+      <textarea id="modal-responses" rows="2"></textarea>
+    </div>
+    <div class="modal-row">
+      <label for="modal-requirements">Requirements</label>
+      <textarea id="modal-requirements" rows="2"></textarea>
+    </div>
+    <div class="modal-row">
+      <label for="modal-objectives">Objectives</label>
+      <textarea id="modal-objectives" rows="2"></textarea>
+    </div>
+    <div class="modal-row">
+      <label for="modal-loadactions">LoadActions</label>
+      <textarea id="modal-loadactions" rows="2"></textarea>
+    </div>
+    <div class="modal-row">
+      <label>Other Fields</label>
+      <div class="helptext">Location, Note(s) &mdash; or any other field this quest table uses.</div>
+      <div class="modal-fields-list" id="modal-fields-list"></div>
+      <button id="add-field-btn" type="button">+ Add field</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn quiet-danger" id="modal-delete" type="button">Delete page</button>
+      <div class="right">
+        <button class="btn" id="modal-cancel" type="button">Cancel</button>
+        <button class="btn primary" id="modal-save" type="button">Save page</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="trash-backdrop">
+  <div id="trash-panel" role="dialog" aria-modal="true" aria-labelledby="trash-title">
+    <h2 id="trash-title">Restore</h2>
+    <div id="trash-list"></div>
+    <div class="modal-actions">
+      <div></div>
+      <div class="right">
+        <button class="btn" id="trash-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/plain" id="default-md">
+# meet_the_mercs
+
+## Proposed NPCs
+
+**Herald of Port Haven**: Players revisit the fellow who greeted them in Port Haven. This time, he points them toward his twin brother, Gerald.
+
+**Gerald**: Herald's twin brother, Merc Core member. Look very similar to the Herald, but dresses distinctly. Gruff, no patience for hand-holding, but not unkind about it.
+
+## Goals
+
+* Introduce Mercenary Core, Bondless, and one NPC's PoV on the factions
+* Introduce mercenary contracts and give access to that quest board
+  * Note: need probably 10-15 contracts written before starting this quest
+
+## To do / open questions
+
+* {TBD NAME OF MERC CORE TAVERN} where Gerald is found
+* Can a one-time-only quest be added to the board alongside the dailies? Believed yes, needs testing and verification
+* Check whether any players have started dailies without doing this welcome quest first — if so, may need to account for that in the Herald's dialog
+* Will need to track # of completed merc contracts per player, same pattern as dailies tracking
+* TBD # of Dailies completed before this quest is available; maybe 20?
+
+---
+
+## START OF QUEST
+
+| NPC Name | Dailies Quest Board |
+| --- | --- |
+| Location | Town Hall |
+| Title | MERC CORE WANTS YOU |
+| Dialog | *A hand-scrawled note is on the questboard:* <br><br> Meet some mates, do jobs, earn crowns! <br><br> Talk to **the Herald** for more info. |
+| Response(s) | - Color me intrigued. <br> — Starts **meet_the_mercs** quest <br> — Add map marker for Herald. <br><br> - Maybe later. <br> — No change, quest remains on the board until it is started. |
+| Note(s) | Requirement(s): <br> — Quest **meet_the_mercs** not started or completed <br> — Completed {TBD} dailies |
+| Page ID | meet_the_mercs_notice |
+
+| NPC Name | Herald of Port Haven |
+| --- | --- |
+| Location | Docks, new player spawn point |
+| Dialog | Hello, hello, {username}. I've seen you, you're really making an effort to contribute to our community here in Port Haven. <br><br> And now maybe you're ready to do more than collect sticks and dig in the ground, eh? Make some real money? |
+| JournalText | I should return to the docks and talk to the Herald who first welcomed me in town. |
+| Response(s) | - Tell me more. |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started <br> — Objective(s): Talk to the Herald at the dock about the note you found. <br> — LoadAction: Remove map marker |
+| Page ID | meet_the_mercs_herald_intro |
+
+| NPC Name | Herald of Port Haven |
+| --- | --- |
+| Dialog | I don't want to talk about it here all out in the open, but my brother **Gerald** can explain more. Take this scroll to him, and he'll know that I've vouched for you. <br><br> You'll find him at the {TBD NAME OF MERC CORE TAVERN}, and I've marked it on your map. Be careful, though — you'll never find a more wretched hive of, oh, well, you know how it goes. |
+| JournalText | I should take this scroll to Gerald at the {TBD NAME OF MERC CORE TAVERN} |
+| Response(s) | - I got this. <br> — Give quest item: Deco_Scroll <br> — Add map marker for Gerald. |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started <br> — LoadAction: Remove map marker |
+| Page ID | meet_the_mercs_herald_scroll |
+
+| NPC Name | Gerald |
+| --- | --- |
+| Location | Merc Core HQ |
+| Dialog | What here then? What do you think you're doing in here? |
+| Response(s) | - I have this for you. <br> — Remove quest item: Deco_Scroll |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started <br> — Has quest item: Deco_Scroll <br> — Objective(s): Bring the scroll to Gerald at the {TBD Merc Core Tavern} |
+| Page ID | meet_the_mercs_gerald_intro |
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | Oh, one of my brother's bondless volunteers, eh? Well, that's not nothin'. |
+| Response(s) | - Bondless? |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started |
+| Page ID | meet_the_mercs_gerald_bondless |
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | That's you. You ain't got a **faction**, kid. That's pretty unusual, most folx here have taken side in some such: <br><br> There's the **Dawn Guard**, shiny protectors of the light and order. They mean well, but can be stubborn. <br><br> **Voidkin** seem rather *too* interested in some of the odd happenings around here, and I've heard folx say they might even be to blame. <br><br> **The Archive** is also posted up here, scribbling their notes. Make some mighty fine potions, if you've got coin and a wild streak. <br><br> And if they got crowns, we'll do business with any of 'em. |
+| Response(s) | - And who are *you* exactly then? |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started <br> — Objective(s): Learn about the factions |
+| Page ID | meet_the_mercs_gerald_factions |
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | I ain't got time for a history lesson, and you ain't exactly paying for me to professor at ye. <br><br> I'm a member of the **Mercenary Core**, we're a bit like the bondless — not choosing sides, but organized enough to take some contracts, make a profit, while Guard, 'Kin, and those bookworms chase after each other. <br><br> And you can prove yourself to us or just earn some crowns by taking on some of those contracts yourself. While our members take the prime contracts, there's always a few leftovers that might be worth your while. You can start now, if you like, the contract board is just over there. Keep checking back as the contracts get refreshed weekly. |
+| JournalText | I learned about the influential factions in Port Haven and got access to the Mercenary Core's contract board. |
+| Response(s) | - I just might do that. <br> — Add map marker for contract board. |
+| Note(s) | Requirement(s): <br> — Npc req <br> — Quest **meet_the_mercs** started <br> — Objective(s): Check out the merc's contract board. <br> — LoadAction: end the **meet_the_mercs** quest |
+| Page ID | meet_the_mercs_gerald_complete |
+
+## END OF QUEST
+
+---
+
+## Default responses (Gerald, no active quest)
+
+### Quest not yet received
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | *Gerald is quietly polishing a dagger when you approach. He does not look up.* <br><br> I don't know you. |
+| Response(s) | - Back away silently |
+| Note(s) | Requirement(s): <br> — Quest **meet_the_mercs** not started |
+| Page ID | meet_the_mercs_gerald_default |
+
+### Quest completed, no contracts done yet
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | You still shufflin' around here? Go earn some crowns by starting a contract. <br><br> We ain't got anything to talk about otherwise. |
+| Response(s) | - Fair enough. |
+| Note(s) | Requirement(s): <br> — Quest **meet_the_mercs** completed <br> — Merc contracts completed = 0 |
+| Page ID | meet_the_mercs_gerald_no_contracts |
+
+### Quest completed, at least one contract done
+
+| NPC Name | Gerald |
+| --- | --- |
+| Dialog | I'm keepin' an eye on you. |
+| Response(s) | - Alrighty then. |
+| Note(s) | Requirement(s): <br> — Merc contracts completed > 0 |
+| Page ID | meet_the_mercs_gerald_contracts |
+</script>
+
+<script type="module" src="/src/main.js"></script>
+</body></html>

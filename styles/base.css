@@ -1,0 +1,203 @@
+/* Tiny critical pre-load style, folded in from the original document's
+   <head> (it ran before the rest of the CSS/fonts loaded, to avoid a flash
+   of unstyled white). Kept as the first rule here rather than as an inline
+   <style> in index.html, since Vite's production build injects the bundled
+   stylesheet as a <link> in <head> before paint anyway. */
+:root{color-scheme:light}
+body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}
+img{max-width:100%}
+[hidden]:not([hidden=until-found]){display:none!important}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Karla',ui-sans-serif,system-ui,sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;}
+h1,h2,h3{text-wrap:balance;}
+
+/* ---------- layout shell ---------- */
+#app{
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ---------- top bar (minimal placeholder nav) ---------- */
+#topbar{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  padding:0 18px;
+  height:52px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 1px 0 var(--shadow);
+  z-index:20;
+}
+#brand{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  flex:0 0 auto;
+}
+#brand .mark{
+  font-family:'Fraunces',serif;
+  font-weight:700;
+  font-size:19px;
+  letter-spacing:-0.01em;
+  color:var(--crimson-ink);
+}
+#placeholder-nav{
+  display:flex;
+  gap:4px;
+  flex:0 0 auto;
+}
+#placeholder-nav .nav-pill{
+  font-size:12.5px;
+  padding:6px 12px;
+  border-radius:5px;
+  color:var(--ink-faint);
+  border:1px solid transparent;
+  user-select:none;
+}
+#placeholder-nav .nav-pill.active{
+  color:var(--ink);
+  background:var(--surface);
+  border-color:var(--border);
+}
+#placeholder-nav #nav-library-pill{cursor:pointer;}
+#placeholder-nav #nav-library-pill:hover{color:var(--interact-strong);}
+
+/* ---------- current context subheader (open quest/questline) ---------- */
+#quest-pill{
+  flex:0 0 auto;
+  padding:5px 20px;
+  font-family:'Karla',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.03em;
+  background:var(--header-bg);
+  color:var(--header-name);
+  border-bottom:1px solid var(--header-border);
+}
+#quest-pill:empty{display:none;}
+.save-status{
+  flex:1 1 auto;
+  font-size:10.5px;
+  color:var(--ink-faint);
+  opacity:0;
+  transition:opacity .5s ease;
+}
+.save-status.show{opacity:1;}
+#topbar-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.btn{
+  font-size:12.5px;
+  font-weight:600;
+  padding:7px 12px;
+  border-radius:5px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  color:var(--ink);
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  line-height:1;
+}
+.btn:hover{border-color:var(--interact);color:var(--interact-strong);}
+.btn:focus-visible, button:focus-visible, .handle:focus-visible{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+}
+.btn.primary{
+  background:var(--interact);
+  border-color:var(--interact);
+  color:var(--surface-2);
+}
+.btn.primary:hover{background:var(--interact-strong);border-color:var(--interact-strong);color:var(--surface-2);}
+.btn.quiet-danger{background:none;border-color:transparent;color:var(--ink-faint);}
+.btn.quiet-danger:hover{background:var(--surface);border-color:var(--interact);color:var(--interact-strong);}
+.btn.quiet-danger.armed{background:var(--crimson-soft);border-color:var(--crimson);color:var(--crimson-ink);}
+
+/* ---------- topbar "Options" dropdown ---------- */
+.dropdown{position:relative;flex:0 0 auto;}
+.dropdown .caret{font-size:9px;position:relative;top:1px;}
+.dropdown-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  min-width:206px;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:7px;
+  padding:4px;
+  box-shadow:0 6px 18px var(--shadow);
+  z-index:30;
+}
+.dropdown-menu[hidden]{display:none;}
+.dropdown-item{
+  font-size:12.5px;
+  font-weight:600;
+  text-align:left;
+  padding:8px 10px;
+  border-radius:5px;
+  border:1px solid transparent;
+  background:none;
+  color:var(--ink);
+  cursor:pointer;
+  line-height:1.2;
+}
+.dropdown-item:hover{background:var(--surface-2);color:var(--interact-strong);}
+/* "Clear cross-quest arrows" is the one destructive item in the menu, so
+   it still gets a distinct hover treatment — but its resting text color
+   matches every other item now, rather than starting out muted. */
+.dropdown-item.dropdown-item-danger:hover{background:var(--crimson-soft);color:var(--crimson-ink);}
+#file-input, #folder-input{display:none;}
+
+.theme-toggle{
+  position:relative;
+  flex:0 0 auto;
+  width:46px;height:25px;
+  border-radius:14px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  cursor:pointer;
+  padding:0;
+}
+.theme-toggle .track-icon{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:12px;height:12px;
+  color:var(--ink-faint);
+}
+.theme-toggle .track-icon.sun{left:5px;}
+.theme-toggle .track-icon.moon{right:5px;}
+.theme-toggle .thumb{
+  position:absolute;
+  top:2px;left:2px;
+  width:19px;height:19px;
+  border-radius:50%;
+  background:var(--crimson);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--surface-2);
+  transition:left .18s ease, background .18s ease;
+}
+.theme-toggle .thumb svg{width:11px;height:11px;}
+:root[data-theme="dark"] .theme-toggle .thumb{left:23px;background:var(--lilac);}

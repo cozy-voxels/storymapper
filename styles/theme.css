@@ -1,0 +1,92 @@
+:root{
+  --bg:#e9e1c2;
+  --bg-dot:#d6c99a;
+  --surface:#f8f3e2;
+  --surface-2:#fbf8ee;
+  --ink:#221e17;
+  --ink-soft:#5b5340;
+  --ink-faint:#8a8067;
+  --crimson:#5e1742;
+  --crimson-ink:#471132;
+  --crimson-soft:#e7dce3;
+  --lilac:#6f5f9c;
+  --lilac-soft:#ded6ee;
+  --border:#c7b98a;
+  --border-strong:#a99a68;
+  --shadow:rgba(34,30,23,0.20);
+  --focus:#3f6e8c;
+  --interact:#9c3f8a;
+  --interact-strong:#7a2f6c;
+  --status-green:#2f7a4f;
+  --status-green-soft:#dcecdf;
+  --status-blue:#2f5f9c;
+  --status-blue-soft:#dbe6f2;
+  --header-bg:linear-gradient(155deg, var(--crimson) 0%, var(--crimson-ink) 130%);
+  --header-name:#fbf3e2;
+  --header-pageid:#f0cfe0;
+  --header-border:var(--crimson-ink);
+  --header-icon:rgba(251,243,226,0.78);
+  --header-icon-hover:#fff6ec;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1120;
+    --bg-dot:#161b30;
+    --surface:#161c30;
+    --surface-2:#111528;
+    --ink:#eceff7;
+    --ink-soft:#aeb5cc;
+    --ink-faint:#727a99;
+    --crimson:#ef7488;
+    --crimson-ink:#ffa8b6;
+    --crimson-soft:#33223a;
+    --lilac:#b3a5ec;
+    --lilac-soft:#292a4a;
+    --border:#262c48;
+    --border-strong:#38406a;
+    --shadow:rgba(0,0,0,0.6);
+    --focus:#8fc4e8;
+    --interact:#e28ad4;
+    --interact-strong:#f0abe3;
+    --status-green:#7fd9a0;
+    --status-green-soft:#1e3a2b;
+    --status-blue:#8fc4e8;
+    --status-blue-soft:#1c2c3f;
+    --header-bg:linear-gradient(180deg, #33223a 0%, transparent 130%);
+    --header-name:#eceff7;
+    --header-pageid:#ffa8b6;
+    --header-border:#262c48;
+    --header-icon:#727a99;
+    --header-icon-hover:#eceff7;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1120;
+  --bg-dot:#161b30;
+  --surface:#161c30;
+  --surface-2:#111528;
+  --ink:#eceff7;
+  --ink-soft:#aeb5cc;
+  --ink-faint:#727a99;
+  --crimson:#ef7488;
+  --crimson-ink:#ffa8b6;
+  --crimson-soft:#33223a;
+  --lilac:#b3a5ec;
+  --lilac-soft:#292a4a;
+  --border:#262c48;
+  --border-strong:#38406a;
+  --shadow:rgba(0,0,0,0.6);
+  --focus:#8fc4e8;
+  --interact:#e28ad4;
+  --interact-strong:#f0abe3;
+  --status-green:#7fd9a0;
+  --status-green-soft:#1e3a2b;
+  --status-blue:#8fc4e8;
+  --status-blue-soft:#1c2c3f;
+  --header-bg:linear-gradient(180deg, #33223a 0%, transparent 130%);
+  --header-name:#eceff7;
+  --header-pageid:#ffa8b6;
+  --header-border:#262c48;
+  --header-icon:#727a99;
+  --header-icon-hover:#eceff7;
+}

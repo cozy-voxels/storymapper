@@ -1,0 +1,408 @@
+/* ---------- canvas ---------- */
+#viewport{
+  position:relative;
+  flex:1 1 auto;
+  overflow:hidden;
+  cursor:grab;
+  background-image:radial-gradient(var(--bg-dot) 1.4px, transparent 1.4px);
+  background-size:26px 26px;
+}
+#viewport.panning{cursor:grabbing;}
+#world{
+  position:absolute;
+  top:0;left:0;
+  width:6000px;
+  height:4200px;
+  transform-origin:0 0;
+}
+svg#wires{
+  position:absolute;
+  top:0;left:0;
+  width:6000px;
+  height:4200px;
+  pointer-events:none;
+  overflow:visible;
+}
+svg#wires path.wire{
+  fill:none;
+  stroke:var(--interact);
+  stroke-width:2.25;
+  opacity:0.85;
+  pointer-events:stroke;
+}
+svg#wires path.wire-hit{
+  fill:none;
+  stroke:transparent;
+  stroke-width:16;
+  pointer-events:stroke;
+  cursor:pointer;
+}
+svg#wires path.wire.selected{stroke:var(--interact-strong);stroke-width:3;opacity:1;}
+svg#wires path.wire.wire-cross{stroke:var(--lilac);stroke-dasharray:2 6;stroke-linecap:round;}
+svg#wires path.wire.wire-cross.selected{stroke:var(--interact-strong);}
+/* When two pages link to each other, the arrow going the "other" direction
+   (the later-added one of the pair — see computeMutualReturnIds) is drawn
+   grey instead of the standard pink, so the primary/forward flow through
+   the map still reads clearly at a glance. */
+svg#wires path.wire.wire-return{stroke:var(--ink-faint);}
+svg#wires path.wire.wire-return.selected{stroke:var(--interact-strong);}
+svg#wires path.wire-temp{
+  fill:none;
+  stroke:var(--interact);
+  stroke-width:2.25;
+  stroke-dasharray:6 5;
+  opacity:0.9;
+}
+/* pointer-events:auto is not optional here — svg#wires sets pointer-events:none
+   at the root (so the wires layer doesn't block clicks on the canvas
+   underneath it), and that value inherits all the way down unless a
+   descendant explicitly opts back in. Nothing here ever did, so both the
+   × delete button and the ✎ label-edit button have been visually present
+   but completely unclickable. */
+svg#wires g.wire-del{cursor:pointer;pointer-events:auto;}
+svg#wires g.wire-del circle{fill:var(--surface-2);stroke:var(--interact-strong);stroke-width:1.5;}
+svg#wires g.wire-del text{
+  fill:var(--interact-strong);
+  font-family:'Karla',sans-serif;
+  font-size:13px;
+  font-weight:700;
+  text-anchor:middle;
+  dominant-baseline:central;
+  pointer-events:none;
+}
+/* Response text riding along a wire, so it's clear at a glance which
+   response leads to which page when a card has more than one exit. */
+svg#wires g.wire-label{pointer-events:none;}
+svg#wires g.wire-label rect{
+  fill:var(--surface-2);
+  stroke:var(--interact);
+  stroke-width:1;
+  opacity:0.92;
+}
+svg#wires g.wire-label.cross rect{stroke:var(--lilac);}
+svg#wires g.wire-label text{
+  fill:var(--ink-soft);
+  font-family:'Karla',sans-serif;
+  font-size:10.5px;
+  font-weight:600;
+  text-anchor:middle;
+  dominant-baseline:central;
+  pointer-events:none;
+}
+
+/* Floating HTML overlay (not SVG — it needs real text wrapping and click
+   targets) offering a wire's source-page responses as its label. */
+.conn-label-chooser{
+  position:fixed;
+  z-index:60;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:180px;
+  max-width:280px;
+  background:var(--surface-2);
+  border:1px solid var(--interact);
+  border-radius:8px;
+  padding:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.28);
+}
+.conn-label-chooser .clc-head{
+  font-family:'Karla',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--ink-faint);
+  padding:2px 8px 5px;
+}
+.conn-label-chooser button{
+  all:unset;
+  box-sizing:border-box;
+  width:100%;
+  cursor:pointer;
+  font-family:'Karla',sans-serif;
+  font-size:12.5px;
+  color:var(--ink);
+  padding:7px 8px;
+  border-radius:5px;
+}
+.conn-label-chooser button:hover{background:var(--interact);color:var(--surface-2);}
+.conn-label-chooser button.clc-skip{
+  color:var(--ink-faint);
+  border-top:1px solid var(--header-border);
+  margin-top:2px;
+  padding-top:9px;
+  border-radius:0 0 5px 5px;
+}
+
+/* ---------- card ---------- */
+.card{
+  position:absolute;
+  width:308px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:7px;
+  box-shadow:0 3px 10px var(--shadow);
+  user-select:none;
+  z-index:1;
+}
+.card.dragging{
+  z-index:30;
+  box-shadow:0 10px 26px var(--shadow);
+  cursor:grabbing;
+}
+/* Shift-drag lasso selection — a temporary, unsaved grouping (unlike a
+   Questline) that lets several cards be dragged together as one move. */
+.card.selected{
+  outline:2px solid var(--interact);
+  outline-offset:2px;
+}
+#marquee-box{
+  position:fixed;
+  border:1.5px dashed var(--interact);
+  background:var(--lilac-soft);
+  opacity:0.55;
+  pointer-events:none;
+  z-index:50;
+  display:none;
+}
+.card-header{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  padding:11px 12px 9px;
+  border-bottom:1px solid var(--header-border);
+  background:var(--header-bg);
+  border-radius:7px 7px 0 0;
+  cursor:grab;
+}
+.card.dragging .card-header{cursor:grabbing;}
+.card-titles{min-width:0;}
+.card-name{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:16px;
+  line-height:1.22;
+  color:var(--header-name);
+  overflow-wrap:anywhere;
+}
+.card-pageid{
+  margin-top:3px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  color:var(--header-pageid);
+  letter-spacing:0.01em;
+  overflow-wrap:anywhere;
+}
+.icon-btn{
+  width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:5px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--ink-faint);
+  cursor:pointer;
+  font-size:12.5px;
+  line-height:1;
+}
+.icon-btn:hover{background:var(--surface-2);border-color:var(--interact);color:var(--interact-strong);}
+.card-header .icon-btn{color:var(--header-icon);}
+.card-header .icon-btn:hover{background:var(--interact);border-color:transparent;color:var(--header-icon-hover);}
+/* Anchored inside the card body's own top-right corner, roughly level with
+   the first field's label (e.g. "DIALOG") — not the header (the connection
+   handles live there and crowd it) and not the card's outer bottom-right
+   corner either (the "More" toggle for extra fields could land right under
+   it, which read as wonky). card-body's own top padding already puts this
+   at very nearly the same line as that first label. */
+.card-actions{position:absolute;top:6px;right:6px;display:flex;gap:4px;z-index:4;}
+.card-actions .icon-btn{
+  background:var(--surface);
+  border-color:var(--border);
+  color:var(--ink-faint);
+  box-shadow:0 1px 4px var(--shadow);
+}
+.card-actions .icon-btn:hover{background:var(--interact);border-color:transparent;color:var(--header-icon-hover);}
+
+.card-body{
+  position:relative;
+  padding:11px 12px 12px;
+  font-size:13px;
+  line-height:1.48;
+  color:var(--ink);
+  overflow-wrap:anywhere;
+}
+/* Only the very first field's label/text shares a line with the button —
+   everything after it has already dropped below the button's bottom edge,
+   so only this one block needs the extra clearance on the right. */
+.card-body > .field-block:first-child{padding-right:32px;}
+.field-block + .field-block{margin-top:9px;}
+.field-label{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.07em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:3px;
+}
+.field-prose{color:var(--ink);}
+.field-prose em{color:var(--ink-soft);}
+.tbd{
+  color:var(--crimson-ink);
+  border-bottom:1.5px dashed var(--crimson);
+  padding:0 1px;
+}
+ul.bullet-list{list-style:none;margin:0;padding:0;}
+ul.bullet-list > li{
+  position:relative;
+  padding-left:15px;
+  margin:4px 0;
+}
+ul.bullet-list > li::before{
+  content:'';
+  position:absolute;
+  left:1px;top:7px;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--dot-color, var(--ink-faint));
+}
+ul.bullet-list.tone-response > li::before{background:var(--crimson);}
+ul.bullet-list.tone-note > li::before{background:var(--lilac);}
+ul.bullet-list li.label-line{padding-left:0;}
+ul.bullet-list li.label-line::before{display:none;}
+ul.bullet-list li.label-line{
+  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);
+  margin-top:8px;
+}
+ul.bullet-sub{list-style:none;margin:3px 0 0;padding:0 0 0 15px;}
+ul.bullet-sub > li{
+  position:relative;
+  padding-left:13px;
+  margin:3px 0;
+  font-size:12px;
+  color:var(--ink-soft);
+}
+ul.bullet-sub > li::before{
+  content:'\2192';
+  position:absolute;left:0;top:0;
+  color:var(--ink-faint);
+  font-size:11px;
+}
+.journal{
+  border-left:2.5px solid var(--lilac);
+  padding:2px 0 2px 10px;
+  font-style:italic;
+  color:var(--ink-soft);
+}
+.kv-row{display:flex;gap:6px;font-size:12.5px;}
+.kv-row .k{color:var(--ink-faint);flex:0 0 auto;}
+.kv-row .v{color:var(--ink);}
+
+.expand-toggle{
+  margin-top:10px;
+  background:none;border:none;
+  color:var(--interact);
+  font-size:11.5px;
+  font-weight:700;
+  letter-spacing:0.03em;
+  cursor:pointer;
+  padding:2px 0;
+  display:flex;align-items:center;gap:4px;
+}
+.expand-toggle:hover{color:var(--interact-strong);}
+.card-extra{
+  margin-top:8px;
+  padding-top:9px;
+  border-top:1px dashed var(--border);
+}
+.card-extra[hidden]{display:none;}
+
+.handle{
+  position:absolute;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:2px solid var(--interact);
+  cursor:crosshair;
+  z-index:5;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .12s ease, background .12s ease;
+}
+.handle:hover{background:var(--interact);}
+.handle-top{top:0;left:50%;transform:translate(-50%,-50%);}
+.handle-left{left:0;top:50%;transform:translate(-50%,-50%);}
+.handle-right{right:0;top:50%;transform:translate(-50%,-50%);}
+.card:hover .handle,
+#viewport.connecting .handle{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* ---------- zoom control ---------- */
+#zoom-ctl{
+  position:absolute;
+  right:18px;bottom:18px;
+  display:flex;
+  align-items:center;
+  gap:2px;
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);
+  border-radius:20px;
+  padding:4px;
+  box-shadow:0 3px 10px var(--shadow);
+  z-index:15;
+}
+#zoom-ctl button{
+  width:26px;height:26px;
+  border-radius:50%;
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  font-size:15px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+#zoom-ctl button:hover{background:var(--surface);color:var(--interact-strong);}
+#zoom-pct{
+  width:44px;
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--ink-soft);
+  cursor:pointer;
+}
+
+/* ---------- questline sections (visual-only, whole-questline canvas view) ---------- */
+#sections-layer{
+  position:absolute;
+  top:0;left:0;
+  width:6000px;
+  height:4200px;
+  pointer-events:none;
+  z-index:0;
+}
+.quest-section{
+  position:absolute;
+  border:1.5px dashed var(--border-strong);
+  border-radius:14px;
+  background:var(--surface-2);
+  opacity:0.55;
+  pointer-events:auto;
+  cursor:grab;
+}
+.quest-section.dragging{cursor:grabbing;opacity:0.7;}
+.quest-section-label{
+  position:absolute;
+  top:-13px;left:16px;
+  padding:2px 10px;
+  background:var(--interact);
+  color:var(--surface-2);
+  font-family:'Karla',sans-serif;
+  font-size:11.5px;
+  font-weight:700;
+  letter-spacing:0.02em;
+  border-radius:5px;
+  opacity:1;
+}

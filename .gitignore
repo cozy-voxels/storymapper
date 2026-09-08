@@ -1,2 +1,6 @@
 STORYMAPPER_CONTEXT.md
 data/*.json
+
+node_modules/
+dist/
+.vite/
