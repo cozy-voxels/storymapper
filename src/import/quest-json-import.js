@@ -67,6 +67,13 @@ export function buildQuestFromJson(qj){
     if(pd.Requirements && pd.Requirements.length) fields.push({key: 'Requirements', value: pd.Requirements.join(' <br> ')});
     if(pd.Objectives && pd.Objectives.length) fields.push({key: 'Objectives', value: pd.Objectives.join(' <br> ')});
     if(pd.LoadActions && pd.LoadActions.length) fields.push({key: 'LoadActions', value: pd.LoadActions.join(' <br> ')});
+    // Two real, if rare, page flags that predate this tool and aren't in
+    // ql_data-models.md's schema table (only in QUEST_GUIDE.md's prose, or
+    // not documented at all) -- always `true` when present in every real
+    // quest file seen so far, never `false`, so a plain 'true' marker field
+    // round-trips them without needing a dedicated boolean field type.
+    if(pd.AutoTrigger) fields.push({key: 'AutoTrigger', value: 'true'});
+    if(pd.RequiresResponse) fields.push({key: 'RequiresResponse', value: 'true'});
     page.fields = fields;
   });
 
@@ -107,17 +114,18 @@ export function buildQuestFromJson(qj){
     if(next) connections.push({id: 'w' + (state.nextConnId++), from: page.id, to: next.id, fromSide: 'right', toSide: 'left'});
   });
 
-  // The Pages array in the source JSON is often listed in whatever order
-  // the mod author happened to write the pages, not the order they're
-  // actually visited in play — laying out by that raw order tends to run
-  // the dialogue backwards. Reorder for layout purposes by walking the
-  // arrows we just built instead: start from the page(s) nothing points
-  // at (the real entry point) and follow page: connections outward, so
-  // the grid reads left-to-right/top-to-bottom the way the quest is
-  // actually played.
-  pages = orderPagesByFlow(pages, connections);
+  // IMPORTANT: `pages` stays in the source JSON's own Pages order here --
+  // that order is the mod's actual page-*priority* list (pages are
+  // evaluated top to bottom and the first whose Requirements all pass
+  // wins, per QUEST_GUIDE.md), not narrative/story order, and export
+  // needs to reproduce it exactly for correct in-game behavior. A
+  // separate flow-ordered copy is computed below purely so the caller's
+  // initial grid layout reads left-to-right/top-to-bottom the way the
+  // quest is actually played, without disturbing the order that gets
+  // stored and re-exported.
+  var layoutOrder = orderPagesByFlow(pages, connections);
 
-  return {pages: pages, connections: connections, meta: {description: qj.Description, repeatable: !!qj.Repeatable, rewards: qj.Rewards}};
+  return {pages: pages, layoutOrder: layoutOrder, connections: connections, meta: {description: qj.Description, repeatable: !!qj.Repeatable, rewards: qj.Rewards, requirements: qj.Requirements}};
 }
 
 /* Reorders pages by walking outgoing page: connections breadth-first from

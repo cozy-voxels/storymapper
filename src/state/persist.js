@@ -13,6 +13,14 @@ export function persistCurrentQuest(){
     name: state.questName,
     questlineId: state.questlineId,
     status: existingQuest ? existingQuest.status : undefined,
+    // Description/Repeatable/Rewards/Requirements (real QuestLines quest
+    // metadata, carried through from JSON import -- see buildQuestFromJson)
+    // have no canvas/editor UI of their own yet, so a canvas edit's save
+    // must preserve whatever was already stored rather than dropping it.
+    description: existingQuest && existingQuest.description,
+    repeatable: existingQuest && existingQuest.repeatable,
+    rewards: existingQuest && existingQuest.rewards,
+    requirements: existingQuest && existingQuest.requirements,
     pages: state.pages,
     connections: state.connections,
     trash: state.trash,
@@ -96,6 +104,13 @@ export function persistCurrentQuestline(){
       name: existing.name || m.name,
       questlineId: state.activeQuestlineId,
       status: existing.status,
+      // See persistCurrentQuest -- same preserve-what-was-already-stored
+      // reasoning, since this quest's own metadata isn't touched by
+      // anything the whole-questline canvas view can edit.
+      description: existing.description,
+      repeatable: existing.repeatable,
+      rewards: existing.rewards,
+      requirements: existing.requirements,
       pages: pages,
       connections: connections,
       trash: trash,

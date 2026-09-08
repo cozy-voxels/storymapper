@@ -90,6 +90,23 @@ describe('buildQuestFromJson', () => {
     expect(built.meta).toEqual({ description: 'A test quest', repeatable: true, rewards: [{ item: 'Gold', qty: 10 }] });
   });
 
+  it('keeps `pages` in the source Pages order (the mod\'s real evaluation-priority order) even when it differs from narrative flow, while `layoutOrder` reflects the flow order for layout purposes', () => {
+    // Mirrors the real welcome_herald.json shape: the entry point
+    // (nothing points at it) is listed LAST in Pages, branches are listed
+    // before it -- Pages order encodes evaluation priority, not story order.
+    const qj = {
+      Pages: ['branch_a', 'branch_b', 'entry'],
+      PageData: {
+        entry: { Responses: [{ Text: 'go', Actions: ['page:branch_a'] }] },
+        branch_a: { Responses: [{ Text: 'next', Actions: ['page:branch_b'] }] },
+        branch_b: {},
+      },
+    };
+    const built = buildQuestFromJson(qj);
+    expect(built.pages.map((p) => p.pageId)).toEqual(['branch_a', 'branch_b', 'entry']);
+    expect(built.layoutOrder.map((p) => p.pageId)).toEqual(['entry', 'branch_a', 'branch_b']);
+  });
+
   it('assigns globally-unique ids by continuing from state.nextPageId/nextConnId', () => {
     state.nextPageId = 5;
     state.nextConnId = 9;

@@ -29,6 +29,7 @@ export var elRelayoutBtn = document.getElementById('relayout-btn');
 
 export var elOptionsBtn = document.getElementById('options-btn');
 export var elOptionsMenu = document.getElementById('options-menu');
+export var elExportAllBtn = document.getElementById('export-all-btn');
 
 export var elNavLibraryPill = document.getElementById('nav-library-pill');
 export var elNavWorldPill = document.getElementById('nav-world-pill');

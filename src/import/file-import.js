@@ -60,7 +60,11 @@ export function importOrUpdateQuest(questId, questName, built, questlineId){
       if(!stillPresent[p.pageId]) trash.push({page: p, deletedAt: Date.now()});
     });
   } else {
-    layoutPages(pages);
+    // Lay out using the flow-ordered copy, not `pages` itself -- `pages`
+    // must stay in the source's real page-priority order for export (see
+    // buildQuestFromJson), and layoutPages() mutates x/y in place on the
+    // same page objects either way, so this only affects grid placement.
+    layoutPages(built.layoutOrder || pages);
     trash = [];
   }
   store.quests[questId] = {
@@ -68,6 +72,13 @@ export function importOrUpdateQuest(questId, questName, built, questlineId){
     name: questName,
     questlineId: questlineId || null,
     status: existing && existing.status,
+    // Always taken fresh from this import, like pages/connections --
+    // matches the QuestLines convention that quest id == filename, so a
+    // re-import is meant to replace this quest's data wholesale, not merge.
+    description: built.meta.description,
+    repeatable: built.meta.repeatable,
+    rewards: built.meta.rewards,
+    requirements: built.meta.requirements,
     pages: pages,
     connections: built.connections,
     trash: trash,

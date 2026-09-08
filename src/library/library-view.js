@@ -3,6 +3,7 @@ import { elQuestlineGroups, elStandaloneQuests } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
 import { flashStatus } from '../state/persist.js';
 import { switchToQuest, switchToQuestline } from '../state/quest-switch.js';
+import { exportQuest, exportQuestline } from '../export/export-actions.js';
 
 /* ================= library view ================= */
 
@@ -30,6 +31,7 @@ function questRowHtml(store, quest){
       '<select class="quest-status" data-role="status" data-status="' + escapeHtml(quest.status || '') + '" title="Status">' + questStatusOptionsHtml(quest.status) + '</select>' +
       '<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
       '<button class="btn" type="button" data-role="open-quest">Open</button>' +
+      '<button class="btn" type="button" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
       '<button class="btn quiet-danger" type="button" data-role="delete-quest" title="Delete quest">&times;</button>' +
     '</div>';
 }
@@ -108,6 +110,7 @@ export function renderLibrary(){
           '<span class="chev">&#9662;</span>' +
           '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>' +
           '<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : ' disabled title="Add a quest to this questline first"') + '>Open questline</button>' +
+          '<button class="btn" type="button" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
           '<button class="btn quiet-danger" type="button" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">&times;</button>' +
         '</div>' +
         '<div class="quest-list">' +
@@ -173,6 +176,16 @@ elQuestlineGroups.addEventListener('click', function(e){
   if(openQuestline){
     var qlBlock = openQuestline.closest('.questline-block');
     switchToQuestline(qlBlock.dataset.questlineId);
+    return;
+  }
+  var exportQuestlineBtn = e.target.closest('[data-role="export-questline"]');
+  if(exportQuestlineBtn){
+    var qlIdForExport = exportQuestlineBtn.closest('.questline-block').dataset.questlineId;
+    exportQuestlineBtn.disabled = true;
+    exportQuestline(qlIdForExport).then(function(result){
+      exportQuestlineBtn.disabled = false;
+      if(result.message) flashStatus(result.message, result.ok ? 2500 : 6000);
+    });
     return;
   }
   var deleteQuestline = e.target.closest('[data-role="delete-questline"]');
@@ -257,6 +270,10 @@ function handleQuestRowClick(e){
   }
   if(e.target.closest('[data-role="open-quest"]')){
     switchToQuest(questId);
+    return;
+  }
+  if(e.target.closest('[data-role="export-quest"]')){
+    exportQuest(questId);
   }
 }
 
