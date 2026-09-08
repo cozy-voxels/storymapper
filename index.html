@@ -1,235 +1,271 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>StoryMapper v0.2</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-</head><body>
+<!doctype html>
+<html>
 
-<div id="app">
-  <div id="topbar">
-    <div id="brand">
-      <span class="mark">StoryMapper</span>
-    </div>
-    <nav id="placeholder-nav" aria-hidden="true">
-      <span class="nav-pill" id="nav-library-pill">Story</span>
-      <span class="nav-pill" id="nav-world-pill">World</span>
-      <span class="nav-pill">Settings</span>
-    </nav>
-    <span class="save-status" id="save-status"></span>
-    <div id="topbar-actions">
-      <button class="btn" id="add-card-btn">+ Page</button>
-      <div class="dropdown" id="options-dropdown">
-        <button class="btn" id="options-btn" type="button" aria-haspopup="true" aria-expanded="false">Options <span class="caret">&#9662;</span></button>
-        <div class="dropdown-menu" id="options-menu" hidden>
-          <button type="button" class="dropdown-item" id="relayout-btn" title="Rearrange every card by following the arrows from the start, discarding their current positions">Re-arrange by flow</button>
-          <button type="button" class="dropdown-item" id="validate-quest-btn" title="Check this quest's requirements, actions, and pages, using logic ported from QuestLines Core's own /ql validate command">Validate quest&hellip;</button>
-          <button type="button" class="dropdown-item dropdown-item-danger" id="clear-cross-btn" title="Remove every cross-quest arrow in this questline (its member quests' own pages and arrows are untouched)">Clear cross-quest arrows</button>
-          <button type="button" class="dropdown-item" id="trash-btn" title="Restore a deleted page, quest, or questline">Restore&hellip;</button>
-          <button type="button" class="dropdown-item" id="export-all-btn" title="Download every quest, questline, and World entry as one JSON file -- a raw backup, not a real QuestLines quest file">Export all data&hellip;</button>
-        </div>
-      </div>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark theme" title="Switch theme">
-        <svg class="track-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"></path></svg>
-        <svg class="track-icon moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.4 14.7A8.3 8.3 0 0 1 9.3 3.6a8.6 8.6 0 1 0 11.1 11.1Z"></path></svg>
-        <span class="thumb" id="theme-thumb"></span>
-      </button>
-    </div>
-  </div>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>StoryMapper v0.3</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+		rel="stylesheet">
+</head>
 
-  <div id="quest-pill"></div>
+<body>
 
-  <div id="viewport">
-    <div id="world">
-      <svg id="wires"><defs>
-        <marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 Z" fill="var(--interact)"></path>
-        </marker>
-        <marker id="arrowhead-return" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 Z" fill="var(--ink-faint)"></path>
-        </marker>
-      </defs></svg>
-      <div id="sections-layer"></div>
-      <div id="cards-layer"></div>
-    </div>
-    <div id="zoom-ctl">
-      <button id="zoom-out" title="Zoom out">&minus;</button>
-      <span id="zoom-pct" title="Reset to 100%">100%</span>
-      <button id="zoom-in" title="Zoom in">+</button>
-    </div>
-    <div id="marquee-box"></div>
-  </div>
+	<div id="app">
+		<div id="topbar">
+			<div id="brand">
+				<span class="mark">StoryMapper</span>
+			</div>
+			<nav id="placeholder-nav" aria-hidden="true">
+				<span class="nav-pill" id="nav-library-pill">Story</span>
+				<span class="nav-pill" id="nav-world-pill">World</span>
+				<span class="nav-pill">Settings</span>
+			</nav>
+			<span class="save-status" id="save-status"></span>
+			<div id="topbar-actions">
+				<button class="btn" id="add-card-btn">+ Page</button>
+				<div class="dropdown" id="options-dropdown">
+					<button class="btn" id="options-btn" type="button" aria-haspopup="true"
+						aria-expanded="false">Options <span class="caret">&#9662;</span></button>
+					<div class="dropdown-menu" id="options-menu" hidden>
+						<button type="button" class="dropdown-item" id="relayout-btn"
+							title="Rearrange all cards following their arrows">Re-arrange by flow</button>
+						<button type="button" class="dropdown-item" id="validate-quest-btn"
+							title="Validate quest logic using QL validation">Validate quest&hellip;</button>
+						<button type="button" class="dropdown-item dropdown-item-danger" id="clear-cross-btn"
+							title="Remove all cross-quest arrows (leaving quest arrows untouched)">Clear cross-quest
+							arrows</button>
+						<button type="button" class="dropdown-item" id="trash-btn"
+							title="Restore a deleted page, quest, or questline">Restore&hellip;</button>
+						<button type="button" class="dropdown-item" id="export-all-btn"
+							title="Export all StoryMapper data">Export all data&hellip;</button>
+					</div>
+				</div>
+				<button class="theme-toggle" id="theme-toggle" type="button"
+					aria-label="Switch between light and dark theme" title="Switch theme">
+					<svg class="track-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+						stroke-linecap="round">
+						<circle cx="12" cy="12" r="4.2"></circle>
+						<path
+							d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8">
+						</path>
+					</svg>
+					<svg class="track-icon moon" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M20.4 14.7A8.3 8.3 0 0 1 9.3 3.6a8.6 8.6 0 1 0 11.1 11.1Z"></path>
+					</svg>
+					<span class="thumb" id="theme-thumb"></span>
+				</button>
+			</div>
+		</div>
 
-  <div id="library-view">
-    <div id="library-inner">
-      <h1>Story</h1>
-      <div class="library-section">
-        <div class="library-section-head">
-          <h2>Questlines</h2>
-          <div class="actions">
-            <button class="btn" id="import-questline-btn" title="Import a questline folder of QuestLines quest .json files that share a QuestlineId">Import questline (folder)&hellip;</button>
-            <button class="btn" id="new-questline-btn">+ New questline</button>
-          </div>
-        </div>
-        <div id="questline-groups"></div>
-      </div>
-      <div class="library-section">
-        <div class="library-section-head">
-          <h2>Standalone quests</h2>
-          <button class="btn" id="import-quest-btn" title="Import a quest .md draft or a QuestLines quest .json file">Import quest (.md/.json)&hellip;</button>
-        </div>
-        <div id="standalone-quests"></div>
-      </div>
-    </div>
-  </div>
+		<div id="quest-pill"></div>
 
-  <div id="world-view">
-    <div id="world-inner">
-      <div id="world-directory">
-        <h1>World</h1>
+		<div id="viewport">
+			<div id="world">
+				<svg id="wires">
+					<defs>
+						<marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+							<path d="M0,0 L8,4 L0,8 Z" fill="var(--interact)"></path>
+						</marker>
+						<marker id="arrowhead-return" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+							<path d="M0,0 L8,4 L0,8 Z" fill="var(--ink-faint)"></path>
+						</marker>
+					</defs>
+				</svg>
+				<div id="sections-layer"></div>
+				<div id="cards-layer"></div>
+			</div>
+			<div id="zoom-ctl">
+				<button id="zoom-out" title="Zoom out">&minus;</button>
+				<span id="zoom-pct" title="Reset to 100%">100%</span>
+				<button id="zoom-in" title="Zoom in">+</button>
+			</div>
+			<div id="marquee-box"></div>
+		</div>
 
-        <div class="library-section" id="world-section-factions">
-          <div class="library-section-head">
-            <h2>Factions</h2>
-            <button class="btn" type="button" data-role="add-world-item" data-category="factions">+ New faction</button>
-          </div>
-          <div id="world-list-factions"></div>
-        </div>
+		<div id="library-view">
+			<div id="library-inner">
+				<h1>Story</h1>
+				<div class="library-section">
+					<div class="library-section-head">
+						<h2>Questlines</h2>
+						<div class="actions">
+							<button class="btn" id="import-questline-btn" title="Import a questline folder">Import
+								questline&hellip;</button>
+							<button class="btn" id="new-questline-btn">+ New questline</button>
+						</div>
+					</div>
+					<div id="questline-groups"></div>
+				</div>
+				<div class="library-section">
+					<div class="library-section-head">
+						<h2>Standalone quests</h2>
+						<button class="btn" id="import-quest-btn"
+							title="Import a draft quest (Markdown) or a QuestLines quest (JSON)">Import
+							quest&hellip;</button>
+					</div>
+					<div id="standalone-quests"></div>
+				</div>
+			</div>
+		</div>
 
-        <div class="library-section" id="world-section-npcs">
-          <div class="library-section-head">
-            <h2>NPCs</h2>
-            <button class="btn" type="button" data-role="add-world-item" data-category="npcs">+ New NPC</button>
-          </div>
-          <div id="world-list-npcs"></div>
-        </div>
+		<div id="world-view">
+			<div id="world-inner">
+				<div id="world-directory">
+					<h1>World</h1>
 
-        <div class="library-section" id="world-section-locations">
-          <div class="library-section-head">
-            <h2>Locations</h2>
-            <button class="btn" type="button" data-role="add-world-item" data-category="locations">+ New location</button>
-          </div>
-          <div id="world-list-locations"></div>
-        </div>
-      </div>
+					<div class="library-section" id="world-section-factions">
+						<div class="library-section-head">
+							<h2>Factions</h2>
+							<button class="btn" type="button" data-role="add-world-item" data-category="factions">+ New
+								faction</button>
+						</div>
+						<div id="world-list-factions"></div>
+					</div>
 
-      <div id="world-detail" hidden>
-        <div class="world-breadcrumb">
-          <button type="button" id="world-detail-crumb-world">World</button>
-          <span>/</span>
-          <button type="button" id="world-detail-crumb-category" title="Back to this section in World"></button>
-          <span>/</span>
-          <span id="world-detail-crumb-name"></span>
-        </div>
+					<div class="library-section" id="world-section-npcs">
+						<div class="library-section-head">
+							<h2>NPCs</h2>
+							<button class="btn" type="button" data-role="add-world-item" data-category="npcs">+ New
+								NPC</button>
+						</div>
+						<div id="world-list-npcs"></div>
+					</div>
 
-        <div id="world-detail-view-mode">
-          <div class="world-detail-header">
-            <div>
-              <p class="world-detail-kind" id="world-detail-kind"></p>
-              <h1 class="world-detail-title" id="world-detail-title"></h1>
-            </div>
-            <button class="icon-btn edit-btn" id="world-detail-edit-btn" type="button" title="Edit" aria-label="Edit">&#9998;</button>
-          </div>
-          <div id="world-detail-fields"></div>
-        </div>
+					<div class="library-section" id="world-section-locations">
+						<div class="library-section-head">
+							<h2>Locations</h2>
+							<button class="btn" type="button" data-role="add-world-item" data-category="locations">+ New
+								location</button>
+						</div>
+						<div id="world-list-locations"></div>
+					</div>
+				</div>
 
-        <div id="world-detail-edit-mode" hidden>
-          <div id="world-detail-edit-fields"></div>
-          <div class="modal-actions">
-            <button class="btn quiet-danger" type="button" id="world-detail-delete-btn">Delete</button>
-            <div class="right">
-              <button class="btn" type="button" id="world-detail-cancel-btn">Cancel</button>
-              <button class="btn primary" type="button" id="world-detail-save-btn">Save</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+				<div id="world-detail" hidden>
+					<div class="world-breadcrumb">
+						<button type="button" id="world-detail-crumb-world">World</button>
+						<span>/</span>
+						<button type="button" id="world-detail-crumb-category"
+							title="Back to this section in World"></button>
+						<span>/</span>
+						<span id="world-detail-crumb-name"></span>
+					</div>
 
-  <input type="file" id="file-input" accept=".md,.txt,.json">
-  <input type="file" id="folder-input" webkitdirectory directory multiple>
-</div>
+					<div id="world-detail-view-mode">
+						<div class="world-detail-header">
+							<div>
+								<p class="world-detail-kind" id="world-detail-kind"></p>
+								<h1 class="world-detail-title" id="world-detail-title"></h1>
+							</div>
+							<button class="icon-btn edit-btn" id="world-detail-edit-btn" type="button" title="Edit"
+								aria-label="Edit">&#9998;</button>
+						</div>
+						<div id="world-detail-fields"></div>
+					</div>
 
-<div id="modal-backdrop">
-  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <h2 id="modal-title">Edit page</h2>
-    <div class="modal-row">
-      <label for="modal-name">NPC name</label>
-      <input type="text" id="modal-name">
-    </div>
-    <div class="modal-row pageid">
-      <label for="modal-pageid">Page ID</label>
-      <input type="text" id="modal-pageid">
-    </div>
-    <div class="modal-row">
-      <label for="modal-dialog">Dialog</label>
-      <textarea id="modal-dialog" rows="3"></textarea>
-    </div>
-    <div class="modal-row">
-      <label for="modal-journaltext">JournalText</label>
-      <textarea id="modal-journaltext" rows="2"></textarea>
-    </div>
-    <div class="modal-row">
-      <label for="modal-responses">Response(s)</label>
-      <textarea id="modal-responses" rows="2"></textarea>
-    </div>
-    <div class="modal-row">
-      <label for="modal-requirements">Requirements</label>
-      <textarea id="modal-requirements" rows="2"></textarea>
-    </div>
-    <div class="modal-row">
-      <label for="modal-objectives">Objectives</label>
-      <textarea id="modal-objectives" rows="2"></textarea>
-    </div>
-    <div class="modal-row">
-      <label for="modal-loadactions">LoadActions</label>
-      <textarea id="modal-loadactions" rows="2"></textarea>
-    </div>
-    <div class="modal-row">
-      <label>Other Fields</label>
-      <div class="helptext">Location, Note(s) &mdash; or any other field this quest table uses.</div>
-      <div class="modal-fields-list" id="modal-fields-list"></div>
-      <button id="add-field-btn" type="button">+ Add field</button>
-    </div>
-    <div class="modal-actions">
-      <button class="btn quiet-danger" id="modal-delete" type="button">Delete page</button>
-      <div class="right">
-        <button class="btn" id="modal-cancel" type="button">Cancel</button>
-        <button class="btn primary" id="modal-save" type="button">Save page</button>
-      </div>
-    </div>
-  </div>
-</div>
+					<div id="world-detail-edit-mode" hidden>
+						<div id="world-detail-edit-fields"></div>
+						<div class="modal-actions">
+							<button class="btn quiet-danger" type="button" id="world-detail-delete-btn">Delete</button>
+							<div class="right">
+								<button class="btn" type="button" id="world-detail-cancel-btn">Cancel</button>
+								<button class="btn primary" type="button" id="world-detail-save-btn">Save</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-<div id="trash-backdrop">
-  <div id="trash-panel" role="dialog" aria-modal="true" aria-labelledby="trash-title">
-    <h2 id="trash-title">Restore</h2>
-    <div id="trash-list"></div>
-    <div class="modal-actions">
-      <div></div>
-      <div class="right">
-        <button class="btn" id="trash-close" type="button">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+		<input type="file" id="file-input" accept=".md,.txt,.json">
+		<input type="file" id="folder-input" webkitdirectory directory multiple>
+	</div>
 
-<div id="validate-backdrop">
-  <div id="validate-panel" role="dialog" aria-modal="true" aria-labelledby="validate-title">
-    <h2 id="validate-title">Validate quest</h2>
-    <div class="helptext">Checks this quest's Requirements, Actions, and Pages against QuestLines' own real syntax rules -- the same checks the mod's in-game <code>/ql validate</code> command runs, ported for offline use here. Credit: QuestLines Core by RedStoner.</div>
-    <div id="validate-summary"></div>
-    <div id="validate-issues"></div>
-    <div class="modal-actions">
-      <div></div>
-      <div class="right">
-        <button class="btn" id="validate-close" type="button">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+	<div id="modal-backdrop">
+		<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+			<h2 id="modal-title">Edit page</h2>
+			<div class="modal-row">
+				<label for="modal-name">NPC name</label>
+				<input type="text" id="modal-name">
+			</div>
+			<div class="modal-row pageid">
+				<label for="modal-pageid">Page ID</label>
+				<input type="text" id="modal-pageid">
+			</div>
+			<div class="modal-row">
+				<label for="modal-dialog">Dialog</label>
+				<textarea id="modal-dialog" rows="3"></textarea>
+			</div>
+			<div class="modal-row">
+				<label for="modal-journaltext">JournalText</label>
+				<textarea id="modal-journaltext" rows="2"></textarea>
+			</div>
+			<div class="modal-row">
+				<label for="modal-responses">Response(s)</label>
+				<textarea id="modal-responses" rows="2"></textarea>
+			</div>
+			<div class="modal-row">
+				<label for="modal-requirements">Requirements</label>
+				<textarea id="modal-requirements" rows="2"></textarea>
+			</div>
+			<div class="modal-row">
+				<label for="modal-objectives">Objectives</label>
+				<textarea id="modal-objectives" rows="2"></textarea>
+			</div>
+			<div class="modal-row">
+				<label for="modal-loadactions">LoadActions</label>
+				<textarea id="modal-loadactions" rows="2"></textarea>
+			</div>
+			<div class="modal-row">
+				<label>Other Fields</label>
+				<div class="helptext">Location, Note(s) &mdash; or any other field this quest table uses.</div>
+				<div class="modal-fields-list" id="modal-fields-list"></div>
+				<button id="add-field-btn" type="button">+ Add field</button>
+			</div>
+			<div class="modal-actions">
+				<button class="btn quiet-danger" id="modal-delete" type="button">Delete page</button>
+				<div class="right">
+					<button class="btn" id="modal-cancel" type="button">Cancel</button>
+					<button class="btn primary" id="modal-save" type="button">Save page</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
-<script type="text/plain" id="default-md">
+	<div id="trash-backdrop">
+		<div id="trash-panel" role="dialog" aria-modal="true" aria-labelledby="trash-title">
+			<h2 id="trash-title">Restore</h2>
+			<div id="trash-list"></div>
+			<div class="modal-actions">
+				<div></div>
+				<div class="right">
+					<button class="btn" id="trash-close" type="button">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="validate-backdrop">
+		<div id="validate-panel" role="dialog" aria-modal="true" aria-labelledby="validate-title">
+			<h2 id="validate-title">Validate quest</h2>
+			<div class="helptext">Checks this quest's Requirements, Actions, and Pages against QuestLines' own syntax
+				rules.</div>
+			<div id="validate-summary"></div>
+			<div id="validate-issues"></div>
+			<div class="modal-actions">
+				<div></div>
+				<div class="right">
+					<button class="btn" id="validate-close" type="button">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script type="text/plain" id="default-md">
 # meet_the_mercs
 
 ## Proposed NPCs
@@ -346,5 +382,7 @@
 | Page ID | meet_the_mercs_gerald_contracts |
 </script>
 
-<script type="module" src="/src/main.js"></script>
-</body></html>
+	<script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
