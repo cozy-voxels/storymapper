@@ -1,0 +1,89 @@
+/* ---------- validate panel ---------- */
+#validate-backdrop{
+  position:fixed;inset:0;
+  background:rgba(20,17,12,0.45);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:100;
+}
+#validate-backdrop.open{display:flex;}
+#validate-panel{
+  width:640px;
+  max-width:92vw;
+  max-height:84vh;
+  overflow-y:auto;
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);
+  border-radius:9px;
+  box-shadow:0 16px 40px var(--shadow);
+  padding:18px 20px 20px;
+}
+#validate-panel h2{
+  font-family:'Fraunces',serif;
+  font-size:18px;
+  font-weight:600;
+  margin:0 0 8px;
+  color:var(--crimson-ink);
+}
+#validate-panel code{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:3px;
+  padding:0 4px;
+}
+#validate-summary{
+  display:flex;
+  gap:8px;
+  margin:14px 0;
+}
+.validate-count{
+  font-size:12px;
+  font-weight:700;
+  padding:5px 11px;
+  border-radius:999px;
+}
+.validate-count.error{background:var(--crimson-soft);color:var(--crimson-ink);}
+.validate-count.warning{background:var(--status-amber-soft);color:var(--status-amber);}
+.validate-count.info{background:var(--status-blue-soft);color:var(--status-blue);}
+.validate-clean{
+  font-size:13px;
+  color:var(--status-green);
+  font-weight:600;
+  padding:10px 0;
+}
+.validate-issue{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:9px 0;
+  border-bottom:1px solid var(--border);
+}
+.validate-issue:last-child{border-bottom:none;}
+.validate-issue-level{
+  flex:0 0 auto;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  padding:3px 8px;
+  border-radius:5px;
+  margin-top:1px;
+}
+.validate-issue-level.error{background:var(--crimson-soft);color:var(--crimson-ink);}
+.validate-issue-level.warning{background:var(--status-amber-soft);color:var(--status-amber);}
+.validate-issue-level.info{background:var(--status-blue-soft);color:var(--status-blue);}
+.validate-issue-body{min-width:0;flex:1 1 auto;}
+.validate-issue-path{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--ink-faint);
+  overflow-wrap:anywhere;
+}
+.validate-issue-message{
+  font-size:12.5px;
+  color:var(--ink);
+  margin-top:2px;
+  overflow-wrap:anywhere;
+}

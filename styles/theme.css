@@ -21,6 +21,8 @@
   --status-green-soft:#dcecdf;
   --status-blue:#2f5f9c;
   --status-blue-soft:#dbe6f2;
+  --status-amber:#9c6f1f;
+  --status-amber-soft:#f2e3c2;
   --header-bg:linear-gradient(155deg, var(--crimson) 0%, var(--crimson-ink) 130%);
   --header-name:#fbf3e2;
   --header-pageid:#f0cfe0;
@@ -52,6 +54,8 @@
     --status-green-soft:#1e3a2b;
     --status-blue:#8fc4e8;
     --status-blue-soft:#1c2c3f;
+    --status-amber:#e0b976;
+    --status-amber-soft:#3a2e14;
     --header-bg:linear-gradient(180deg, #33223a 0%, transparent 130%);
     --header-name:#eceff7;
     --header-pageid:#ffa8b6;
@@ -83,6 +87,8 @@
   --status-green-soft:#1e3a2b;
   --status-blue:#8fc4e8;
   --status-blue-soft:#1c2c3f;
+  --status-amber:#e0b976;
+  --status-amber-soft:#3a2e14;
   --header-bg:linear-gradient(180deg, #33223a 0%, transparent 130%);
   --header-name:#eceff7;
   --header-pageid:#ffa8b6;

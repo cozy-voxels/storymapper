@@ -21,6 +21,12 @@ export var elModalFieldsList = document.getElementById('modal-fields-list');
 export var elTrashBackdrop = document.getElementById('trash-backdrop');
 export var elTrashList = document.getElementById('trash-list');
 
+export var elValidateQuestBtn = document.getElementById('validate-quest-btn');
+export var elValidateBackdrop = document.getElementById('validate-backdrop');
+export var elValidateSummary = document.getElementById('validate-summary');
+export var elValidateIssues = document.getElementById('validate-issues');
+export var elValidateClose = document.getElementById('validate-close');
+
 export var elLibraryView = document.getElementById('library-view');
 export var elWorldView = document.getElementById('world-view');
 export var elAddCardBtn = document.getElementById('add-card-btn');

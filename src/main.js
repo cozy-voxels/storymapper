@@ -4,6 +4,7 @@ import '../styles/canvas.css';
 import '../styles/modal.css';
 import '../styles/library.css';
 import '../styles/world.css';
+import '../styles/validate.css';
 
 import { state, loadStore } from './state/store.js';
 
@@ -26,6 +27,7 @@ import './library/trash.js';
 import './library/library-view.js';
 import './world/world-view.js';
 import './import/file-import.js';
+import './validate/validate-ui.js';
 import './theme.js';
 
 import { switchToQuestline, restoreQuest, loadFromMarkdown } from './state/quest-switch.js';

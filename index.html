@@ -22,6 +22,7 @@
         <button class="btn" id="options-btn" type="button" aria-haspopup="true" aria-expanded="false">Options <span class="caret">&#9662;</span></button>
         <div class="dropdown-menu" id="options-menu" hidden>
           <button type="button" class="dropdown-item" id="relayout-btn" title="Rearrange every card by following the arrows from the start, discarding their current positions">Re-arrange by flow</button>
+          <button type="button" class="dropdown-item" id="validate-quest-btn" title="Check this quest's requirements, actions, and pages, using logic ported from QuestLines Core's own /ql validate command">Validate quest&hellip;</button>
           <button type="button" class="dropdown-item dropdown-item-danger" id="clear-cross-btn" title="Remove every cross-quest arrow in this questline (its member quests' own pages and arrows are untouched)">Clear cross-quest arrows</button>
           <button type="button" class="dropdown-item" id="trash-btn" title="Restore a deleted page, quest, or questline">Restore&hellip;</button>
           <button type="button" class="dropdown-item" id="export-all-btn" title="Download every quest, questline, and World entry as one JSON file -- a raw backup, not a real QuestLines quest file">Export all data&hellip;</button>
@@ -208,6 +209,21 @@
       <div></div>
       <div class="right">
         <button class="btn" id="trash-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="validate-backdrop">
+  <div id="validate-panel" role="dialog" aria-modal="true" aria-labelledby="validate-title">
+    <h2 id="validate-title">Validate quest</h2>
+    <div class="helptext">Checks this quest's Requirements, Actions, and Pages against QuestLines' own real syntax rules -- the same checks the mod's in-game <code>/ql validate</code> command runs, ported for offline use here. Credit: QuestLines Core by RedStoner.</div>
+    <div id="validate-summary"></div>
+    <div id="validate-issues"></div>
+    <div class="modal-actions">
+      <div></div>
+      <div class="right">
+        <button class="btn" id="validate-close" type="button">Close</button>
       </div>
     </div>
   </div>

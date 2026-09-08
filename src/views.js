@@ -1,7 +1,7 @@
 import { state } from './state/store.js';
 import {
   elLibraryView, elWorldView, elViewport, elQuestPill,
-  elAddCardBtn, elClearCrossBtn, elRelayoutBtn,
+  elAddCardBtn, elClearCrossBtn, elRelayoutBtn, elValidateQuestBtn,
   elOptionsBtn, elOptionsMenu, elNavLibraryPill, elNavWorldPill
 } from './dom.js';
 import { cancelAutosave, persistCurrent, persistCurrentQuest, persistCurrentQuestline, flashStatus } from './state/persist.js';
@@ -52,6 +52,7 @@ export function updateTopbarForView(){
   var wholeQuestline = state.view === 'canvas' && !!state.activeQuestlineId;
   if(elAddCardBtn) elAddCardBtn.style.display = singleQuest ? '' : 'none';
   if(elRelayoutBtn) elRelayoutBtn.style.display = singleQuest ? '' : 'none';
+  if(elValidateQuestBtn) elValidateQuestBtn.style.display = singleQuest ? '' : 'none';
   if(elClearCrossBtn) elClearCrossBtn.style.display = wholeQuestline ? '' : 'none';
   if(elNavLibraryPill) elNavLibraryPill.classList.toggle('active', state.view === 'library');
   if(elNavWorldPill) elNavWorldPill.classList.toggle('active', state.view === 'world' || state.view === 'world-item');
