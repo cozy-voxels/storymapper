@@ -158,6 +158,29 @@ document.getElementById('new-questline-btn').addEventListener('click', function(
   renderLibrary();
 });
 
+// Unlike a new questline (just a grouping shell, nothing to look at until
+// quests are added to it), a brand-new quest is immediately useful to
+// start filling in -- so this opens straight onto its canvas, same as
+// finishing a file import, rather than leaving it sitting in the library.
+document.getElementById('new-quest-btn').addEventListener('click', function(){
+  var store = loadStore();
+  var id = genId();
+  store.quests[id] = {
+    id: id,
+    name: 'New Quest',
+    questlineId: null,
+    status: undefined,
+    pages: [],
+    connections: [],
+    trash: [],
+    pan: {x: 60, y: 40},
+    zoom: 1,
+    updatedAt: Date.now()
+  };
+  saveStore(store);
+  switchToQuest(id);
+});
+
 elQuestlineGroups.addEventListener('click', function(e){
   var nameEl = e.target.closest('.questline-name');
   if(nameEl){
