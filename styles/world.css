@@ -116,6 +116,11 @@
   cursor:pointer;
 }
 .linked-item:hover{border-color:var(--interact);color:var(--interact-strong);}
+/* A link to a quest (Story side) rather than another World item -- same
+   button, plus a leading icon so it reads as "goes to a quest" at a
+   glance. */
+.linked-item.linked-item-quest{display:inline-flex;align-items:center;gap:6px;}
+.linked-item.linked-item-quest::before{content:'\1F4DC';font-size:13px;line-height:1;}
 
 /* ---------- NPC "Location" search/select (edit mode) ---------- */
 .location-field textarea{margin-top:8px;}

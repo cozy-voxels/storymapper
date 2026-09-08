@@ -63,27 +63,44 @@
 
 		<div id="quest-pill"></div>
 
-		<div id="viewport">
-			<div id="world">
-				<svg id="wires">
-					<defs>
-						<marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
-							<path d="M0,0 L8,4 L0,8 Z" fill="var(--interact)"></path>
-						</marker>
-						<marker id="arrowhead-return" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
-							<path d="M0,0 L8,4 L0,8 Z" fill="var(--ink-faint)"></path>
-						</marker>
-					</defs>
-				</svg>
-				<div id="sections-layer"></div>
-				<div id="cards-layer"></div>
+		<div id="canvas-area">
+			<aside id="linked-items-sidebar" aria-label="Linked items">
+				<div class="sidebar-inner">
+					<div class="sidebar-head">
+						<h2>Linked items</h2>
+						<button type="button" id="linked-items-sidebar-close" class="icon-btn" title="Close"
+							aria-label="Close">&times;</button>
+					</div>
+					<div class="helptext">NPCs and Locations linked from any page in this quest.</div>
+					<div id="linked-items-list"></div>
+				</div>
+			</aside>
+			<div id="viewport">
+				<div id="world">
+					<svg id="wires">
+						<defs>
+							<marker id="arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+								<path d="M0,0 L8,4 L0,8 Z" fill="var(--interact)"></path>
+							</marker>
+							<marker id="arrowhead-return" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+								<path d="M0,0 L8,4 L0,8 Z" fill="var(--ink-faint)"></path>
+							</marker>
+						</defs>
+					</svg>
+					<div id="sections-layer"></div>
+					<div id="cards-layer"></div>
+				</div>
+				<div id="linked-items-toggle">
+					<button id="linked-items-btn" type="button" title="Linked items" aria-label="Toggle linked items panel"
+						aria-pressed="false">&#128279;</button>
+				</div>
+				<div id="zoom-ctl">
+					<button id="zoom-out" title="Zoom out">&minus;</button>
+					<span id="zoom-pct" title="Reset to 100%">100%</span>
+					<button id="zoom-in" title="Zoom in">+</button>
+				</div>
+				<div id="marquee-box"></div>
 			</div>
-			<div id="zoom-ctl">
-				<button id="zoom-out" title="Zoom out">&minus;</button>
-				<span id="zoom-pct" title="Reset to 100%">100%</span>
-				<button id="zoom-in" title="Zoom in">+</button>
-			</div>
-			<div id="marquee-box"></div>
 		</div>
 
 		<div id="library-view">
@@ -198,6 +215,33 @@
 			<div class="modal-row pageid">
 				<label for="modal-pageid">Page ID</label>
 				<input type="text" id="modal-pageid">
+			</div>
+			<div class="modal-row">
+				<label>Linked NPCs</label>
+				<div class="entity-picker" id="modal-link-npcs" data-category="npcs">
+					<div class="entity-chips" id="modal-link-npcs-chips"></div>
+					<div class="entity-picker-input-wrap">
+						<input type="text" id="modal-link-npcs-search" class="entity-picker-input"
+							placeholder="Search NPCs&hellip;" autocomplete="off">
+						<div class="entity-picker-results" id="modal-link-npcs-results" hidden></div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-row">
+				<label>Linked Locations</label>
+				<div class="entity-picker" id="modal-link-locations" data-category="locations">
+					<div class="entity-chips" id="modal-link-locations-chips"></div>
+					<div class="entity-picker-input-wrap">
+						<input type="text" id="modal-link-locations-search" class="entity-picker-input"
+							placeholder="Search locations&hellip;" autocomplete="off">
+						<div class="entity-picker-results" id="modal-link-locations-results" hidden></div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-row" id="modal-suggested-links-row" hidden>
+				<label>Suggested links</label>
+				<div class="helptext">Names found in this page's text that aren't linked yet.</div>
+				<div id="modal-suggested-links"></div>
 			</div>
 			<div class="modal-row">
 				<label for="modal-dialog">Dialog</label>

@@ -5,6 +5,7 @@
 
 export var elWorld = document.getElementById('world');
 export var elCardsLayer = document.getElementById('cards-layer');
+export var elCanvasArea = document.getElementById('canvas-area');
 export var elViewport = document.getElementById('viewport');
 export var elWires = document.getElementById('wires');
 export var elZoomPct = document.getElementById('zoom-pct');
@@ -13,13 +14,22 @@ export var elSaveStatus = document.getElementById('save-status');
 
 export var elMarqueeBox = document.getElementById('marquee-box');
 
+export var elModal = document.getElementById('modal');
 export var elModalBackdrop = document.getElementById('modal-backdrop');
 export var elModalName = document.getElementById('modal-name');
 export var elModalPageId = document.getElementById('modal-pageid');
 export var elModalFieldsList = document.getElementById('modal-fields-list');
+export var elModalSuggestedLinksRow = document.getElementById('modal-suggested-links-row');
+export var elModalSuggestedLinks = document.getElementById('modal-suggested-links');
 
 export var elTrashBackdrop = document.getElementById('trash-backdrop');
 export var elTrashList = document.getElementById('trash-list');
+
+export var elLinkedItemsToggle = document.getElementById('linked-items-toggle');
+export var elLinkedItemsBtn = document.getElementById('linked-items-btn');
+export var elLinkedItemsSidebar = document.getElementById('linked-items-sidebar');
+export var elLinkedItemsSidebarClose = document.getElementById('linked-items-sidebar-close');
+export var elLinkedItemsList = document.getElementById('linked-items-list');
 
 export var elValidateQuestBtn = document.getElementById('validate-quest-btn');
 export var elValidateBackdrop = document.getElementById('validate-backdrop');

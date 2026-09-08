@@ -113,6 +113,29 @@ export function classifyNoteLines(raw){
   return {reqs: reqs, objs: objs, loads: loads};
 }
 
+/* Case-insensitive alphabetical compare, used everywhere a list of world
+   items or quests is ordered by display name (World directory rows, search
+   results, linked-item lists, the Story-side linked-items panel). */
+export function compareNames(a, b){
+  return String(a || '').localeCompare(String(b || ''), undefined, {sensitivity: 'base'});
+}
+
+/* Reduces a raw field value to plain, matchable text: <br> tags become
+   spaces, bold/italic markdown markers are dropped (keeping their
+   contents), and the same STYLE_TAG_RE used by formatInline strips
+   {b}/{i}/{m}/{/}/{#hex}
+   wrapping -- so "{#ca9d6e}{b}Herald of Port Haven{/}{/}" reduces to plain
+   "Herald of Port Haven" for name-matching (see suggestLinks in
+   src/import/link-suggestions.js). Real variable placeholders like
+   {username} are left in place, same as formatInline. */
+export function plainTextForMatching(raw){
+  if(!raw) return '';
+  var t = raw.replace(/<br\s*\/?>/gi, ' ');
+  t = t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
+  t = t.replace(STYLE_TAG_RE, '');
+  return t;
+}
+
 export function expandNoteFields(fields){
   var out = [];
   fields.forEach(function(f){

@@ -10,6 +10,8 @@ import {
   renderSimpleList,
   classifyNoteLines,
   expandNoteFields,
+  compareNames,
+  plainTextForMatching,
 } from './text.js';
 
 describe('escapeHtml', () => {
@@ -155,5 +157,33 @@ describe('expandNoteFields', () => {
   it('leaves fields alone when there is no Note(s)/Notes field', () => {
     const fields = [{ key: 'Dialog', value: 'Hello' }];
     expect(expandNoteFields(fields)).toEqual(fields);
+  });
+});
+
+describe('compareNames', () => {
+  it('sorts case-insensitively', () => {
+    expect(['banana', 'Apple', 'cherry'].sort(compareNames)).toEqual(['Apple', 'banana', 'cherry']);
+  });
+
+  it('treats a falsy name as an empty string', () => {
+    expect(compareNames(null, 'a')).toBeLessThan(0);
+  });
+});
+
+describe('plainTextForMatching', () => {
+  it('reduces a name wrapped in QL style tags to plain text', () => {
+    expect(plainTextForMatching('{#ca9d6e}{b}Herald of Port Haven{/}{/}')).toBe('Herald of Port Haven');
+  });
+
+  it('keeps variable placeholders, unlike the style tags', () => {
+    expect(plainTextForMatching('Hello, {username}.')).toBe('Hello, {username}.');
+  });
+
+  it('turns <br> into a space and drops markdown markers', () => {
+    expect(plainTextForMatching('**Gerald**<br>is here')).toBe('Gerald is here');
+  });
+
+  it('returns an empty string for falsy input', () => {
+    expect(plainTextForMatching('')).toBe('');
   });
 });

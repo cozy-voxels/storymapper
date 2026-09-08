@@ -1,16 +1,18 @@
 import { state, loadStore, saveStore, genId } from '../state/store.js';
 import {
-  elViewport, elLibraryView, elWorldView,
+  elCanvasArea, elLibraryView, elWorldView,
   elWorldDirectory, elWorldDetail, elWorldLists,
   elWorldDetailViewMode, elWorldDetailEditMode, elWorldDetailKind, elWorldDetailTitle,
   elWorldDetailFields, elWorldDetailEditFields, elWorldDetailEditBtn,
   elWorldDetailSaveBtn, elWorldDetailCancelBtn, elWorldDetailDeleteBtn,
   elWorldDetailCrumbWorld, elWorldDetailCrumbCategory, elWorldDetailCrumbName
 } from '../dom.js';
-import { escapeHtml } from '../utils/text.js';
+import { escapeHtml, compareNames } from '../utils/text.js';
 import { closeConnLabelChooser } from '../render/wires.js';
 import { persistCurrent, cancelAutosave, flashSaved } from '../state/persist.js';
 import { updateTopbarForView } from '../views.js';
+import { questsLinkingToWorldItem } from '../state/links.js';
+import { switchToQuest } from '../state/quest-switch.js';
 
 /* ================= world view (Factions / NPCs / Locations) =================
    A simple directory + item-detail pair of views, built the same way the
@@ -73,13 +75,6 @@ var WORLD_SCHEMAS = {
   }
 };
 var WORLD_CATEGORIES = ['factions', 'npcs', 'locations'];
-
-/* Case-insensitive alphabetical compare, used everywhere a list of world
-   items (directory rows, search results, dropdown options, faction
-   cross-reference lists) is ordered by display name. */
-function compareNames(a, b){
-  return String(a || '').localeCompare(String(b || ''), undefined, {sensitivity: 'base'});
-}
 
 function truncateForRow(s){
   s = String(s || '').replace(/\s+/g, ' ').trim();
@@ -222,7 +217,7 @@ export function showWorldView(){
   state.view = 'world';
   state.worldCategory = null;
   state.worldItemId = null;
-  elViewport.style.display = 'none';
+  elCanvasArea.style.display = 'none';
   elLibraryView.classList.remove('open');
   elWorldView.classList.add('open');
   elWorldDetail.hidden = true;
@@ -241,7 +236,7 @@ export function showWorldItem(category, id){
   state.view = 'world-item';
   state.worldCategory = category;
   state.worldItemId = id;
-  elViewport.style.display = 'none';
+  elCanvasArea.style.display = 'none';
   elLibraryView.classList.remove('open');
   elWorldView.classList.add('open');
   elWorldDirectory.hidden = true;
@@ -311,6 +306,22 @@ function renderWorldDetail(edit){
     fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' +
       extraHtml + '<div class="value">' + escapeHtml(displayVal) + '</div></div>';
   });
+
+  // Reverse lookup for the Story-side page-level links (see
+  // src/state/links.js) -- unlike the NPCs/Locations/Faction links above,
+  // there's no existing field for this to double up with, so it keeps its
+  // own heading. NPCs/Locations only: quest pages never link to a Faction.
+  if(category === 'npcs' || category === 'locations'){
+    var linkedQuests = questsLinkingToWorldItem(store, category, state.worldItemId);
+    if(linkedQuests.length){
+      fieldsHtml += '<div class="world-field"><label>Linked Quests</label><div class="linked-list">' +
+        linkedQuests.map(function(r){
+          return '<button type="button" class="linked-item linked-item-quest" data-quest-id="' + r.id + '">' +
+            escapeHtml(r.quest.name || 'Untitled Quest') + '</button>';
+        }).join('') +
+      '</div></div>';
+    }
+  }
   elWorldDetailFields.innerHTML = fieldsHtml;
 
   var editHtml = '';
@@ -357,6 +368,8 @@ function setWorldDetailEditing(editing){
 }
 
 elWorldDetailFields.addEventListener('click', function(e){
+  var questLink = e.target.closest('.linked-item-quest');
+  if(questLink){ switchToQuest(questLink.dataset.questId); return; }
   var link = e.target.closest('.linked-item');
   if(link) showWorldItem(link.dataset.category, link.dataset.id);
 });

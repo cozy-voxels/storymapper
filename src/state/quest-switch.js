@@ -11,6 +11,7 @@ import { applyTransform } from '../canvas/pan-zoom.js';
 import { renderAll, CARD_W } from '../render/cards.js';
 import { closeConnLabelChooser } from '../render/wires.js';
 import { showCanvasView } from '../views.js';
+import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
 
 function sequentialConnections(pages){
   var conns = [];
@@ -118,6 +119,7 @@ export function restoreQuest(quest){
   updateQuestPill();
   applyTransform();
   renderAll();
+  refreshLinkedItemsPanelIfOpen();
 }
 
 /* Lays out a whole questline's member quests as separate blocks. Section
@@ -246,6 +248,7 @@ export function switchToQuestline(qlId){
   updateQuestPill();
   applyTransform();
   renderAll();
+  refreshLinkedItemsPanelIfOpen();
 
   store.activeQuestId = null;
   store.activeQuestlineId = qlId;

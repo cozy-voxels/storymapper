@@ -1,7 +1,7 @@
 import { state } from './state/store.js';
 import {
-  elLibraryView, elWorldView, elViewport, elQuestPill,
-  elAddCardBtn, elClearCrossBtn, elRelayoutBtn, elValidateQuestBtn,
+  elLibraryView, elWorldView, elCanvasArea, elQuestPill,
+  elAddCardBtn, elClearCrossBtn, elRelayoutBtn, elValidateQuestBtn, elLinkedItemsToggle,
   elOptionsBtn, elOptionsMenu, elNavLibraryPill, elNavWorldPill
 } from './dom.js';
 import { cancelAutosave, persistCurrent, persistCurrentQuest, persistCurrentQuestline, flashStatus } from './state/persist.js';
@@ -53,6 +53,7 @@ export function updateTopbarForView(){
   if(elAddCardBtn) elAddCardBtn.style.display = singleQuest ? '' : 'none';
   if(elRelayoutBtn) elRelayoutBtn.style.display = singleQuest ? '' : 'none';
   if(elValidateQuestBtn) elValidateQuestBtn.style.display = singleQuest ? '' : 'none';
+  if(elLinkedItemsToggle) elLinkedItemsToggle.style.display = singleQuest ? '' : 'none';
   if(elClearCrossBtn) elClearCrossBtn.style.display = wholeQuestline ? '' : 'none';
   if(elNavLibraryPill) elNavLibraryPill.classList.toggle('active', state.view === 'library');
   if(elNavWorldPill) elNavWorldPill.classList.toggle('active', state.view === 'world' || state.view === 'world-item');
@@ -65,7 +66,7 @@ export function showCanvasView(){
   state.view = 'canvas';
   elLibraryView.classList.remove('open');
   if(elWorldView) elWorldView.classList.remove('open');
-  elViewport.style.display = '';
+  elCanvasArea.style.display = '';
   updateTopbarForView();
 }
 
@@ -86,7 +87,7 @@ export function showLibraryView(){
   state.questId = null;
   state.activeQuestlineId = null;
   state.view = 'library';
-  elViewport.style.display = 'none';
+  elCanvasArea.style.display = 'none';
   if(elWorldView) elWorldView.classList.remove('open');
   elLibraryView.classList.add('open');
   updateTopbarForView();

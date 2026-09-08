@@ -78,3 +78,73 @@
 }
 .modal-actions .right{display:flex;gap:8px;}
 .helptext{font-size:13.5px;color:var(--ink-faint);margin:-8px 0 14px;}
+
+/* ---------- entity picker (Linked NPCs / Linked Locations) ---------- */
+.entity-picker{position:relative;}
+.entity-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.entity-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:999px;
+  padding:4px 6px 4px 11px;
+  font-family:'Karla',sans-serif;
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink);
+}
+.entity-chip-remove{
+  background:none;border:none;
+  color:var(--ink-faint);
+  font-size:16px;
+  line-height:1;
+  width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.entity-chip-remove:hover{color:var(--interact-strong);}
+.entity-picker-input-wrap{position:relative;}
+.entity-picker-results{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;right:0;
+  max-height:220px;
+  overflow-y:auto;
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);
+  border-radius:7px;
+  box-shadow:0 6px 18px var(--shadow);
+  z-index:10;
+  padding:4px;
+}
+.entity-result-item{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:none;border:none;
+  font-family:'Karla',sans-serif;
+  font-size:15.5px;
+  color:var(--ink);
+  padding:7px 9px;
+  border-radius:5px;
+  cursor:pointer;
+}
+.entity-result-item:hover{background:var(--interact);color:var(--surface-2);}
+.entity-picker-empty{
+  font-size:13.5px;
+  color:var(--ink-faint);
+  padding:8px 9px;
+}
+.suggested-link-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:6px 0;
+  border-bottom:1px solid var(--border);
+}
+.suggested-link-item:last-child{border-bottom:none;}
+.suggested-link-item span{font-size:15.5px;color:var(--ink);}
+.suggested-link-item button{font-size:13.5px;padding:4px 10px;}

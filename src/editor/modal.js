@@ -1,8 +1,14 @@
-import { state, pageById } from '../state/store.js';
-import { elViewport, elModalBackdrop, elModalName, elModalPageId, elModalFieldsList } from '../dom.js';
+import { state, pageById, loadStore } from '../state/store.js';
+import {
+  elViewport, elModal, elModalBackdrop, elModalName, elModalPageId, elModalFieldsList,
+  elModalSuggestedLinksRow, elModalSuggestedLinks
+} from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
 import { toWorld } from '../canvas/pan-zoom.js';
 import { renderAll, removePage } from '../render/cards.js';
+import { initEntityPickers, getEntityPickerIds, addEntityLink } from '../ui/entity-picker.js';
+import { suggestLinks } from '../import/link-suggestions.js';
+import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
 
 /* ================= edit modal ================= */
 
@@ -22,6 +28,49 @@ function isFixedKey(key){
   var lower = key.toLowerCase();
   return FIXED_FIELD_DEFS.some(function(def){ return def.match.indexOf(lower) > -1; });
 }
+
+/* Recomputed from the modal's own live textarea values (not the last-saved
+   page) so a name typed just now shows up as a suggestion immediately,
+   without requiring a save first. */
+function currentDraftPage(){
+  return {
+    fields: FIXED_FIELD_DEFS.map(function(def){
+      return {key: def.canonical, value: document.getElementById(def.el).value};
+    })
+  };
+}
+
+function renderSuggestions(suggestions){
+  if(!suggestions.length){
+    elModalSuggestedLinksRow.hidden = true;
+    elModalSuggestedLinks.innerHTML = '';
+    return;
+  }
+  elModalSuggestedLinksRow.hidden = false;
+  elModalSuggestedLinks.innerHTML = suggestions.map(function(s){
+    return '<div class="suggested-link-item"><span>' + escapeHtml(s.name) + '</span>' +
+      '<button type="button" class="btn" data-category="' + s.category + '" data-id="' + s.id + '">Add</button></div>';
+  }).join('');
+}
+
+function refreshSuggestions(){
+  var linked = {npcs: getEntityPickerIds('npcs'), locations: getEntityPickerIds('locations')};
+  var suggestions = suggestLinks(currentDraftPage(), loadStore(), linked);
+  renderSuggestions(suggestions);
+}
+
+elModalSuggestedLinks.addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-id]');
+  if(!btn) return;
+  addEntityLink(btn.dataset.category, btn.dataset.id);
+});
+
+var suggestDebounceTimer = null;
+elModal.addEventListener('input', function(e){
+  if(!FIXED_FIELD_DEFS.some(function(def){ return def.el === e.target.id; })) return;
+  clearTimeout(suggestDebounceTimer);
+  suggestDebounceTimer = setTimeout(refreshSuggestions, 300);
+});
 
 function fieldRow(key, value){
   var row = document.createElement('div');
@@ -53,6 +102,8 @@ export function openEditor(cardId){
     if(isFixedKey(f.key)) return;
     elModalFieldsList.appendChild(fieldRow(f.key, f.value));
   });
+  initEntityPickers(page, refreshSuggestions);
+  refreshSuggestions();
   document.getElementById('modal-title').textContent = 'Edit page';
   elModalBackdrop.classList.add('open');
   elModalName.focus();
@@ -66,6 +117,7 @@ export function openNewCardEditor(){
     title: 'New NPC',
     pageId: 'new_page_id',
     fields: [{key:'Dialog', value:''}, {key:'Response(s)', value:'- '}],
+    linkedNpcIds: [], linkedLocationIds: [],
     x: wp.x - 150, y: wp.y - 80
   };
   state.pages.push(page);
@@ -107,8 +159,11 @@ document.getElementById('modal-save').addEventListener('click', function(){
     if(k) fields.push({key:k, value:v});
   });
   page.fields = fields;
+  page.linkedNpcIds = getEntityPickerIds('npcs');
+  page.linkedLocationIds = getEntityPickerIds('locations');
   closeModal();
   renderAll();
+  refreshLinkedItemsPanelIfOpen();
 });
 
 document.getElementById('modal-delete').addEventListener('click', function(){
