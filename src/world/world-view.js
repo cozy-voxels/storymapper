@@ -60,7 +60,7 @@ var WORLD_SCHEMAS = {
       {key: 'regionType', label: 'Region / Type', type: 'text'},
       {key: 'description', label: 'Description', type: 'textarea'},
       {key: 'faction', label: 'Faction', type: 'faction-select'},
-      {key: 'notablePresence', label: 'Notable NPCs / Factions', type: 'textarea'},
+      {key: 'notablePresence', label: 'NPCs', type: 'textarea'},
       {key: 'notes', label: 'Notes', type: 'textarea'}
     ],
     subtitle: function(item, store){
@@ -156,6 +156,18 @@ function itemsForFaction(store, category, keyField, factionId){
   return Object.keys(items)
     .filter(function(id){ return items[id][keyField] === factionId; })
     .map(function(id){ return {id: id, item: items[id]}; })
+    .sort(function(a, b){ return compareNames(a.item.name, b.item.name); });
+}
+
+/* Same reverse-lookup idea as itemsForFaction, but for a Location's "NPCs"
+   field -- there's no free-standing keyField to compare against here since
+   an NPC's location is the normalized {id, detail} shape (see
+   locationValue), not a bare id like affiliation/faction. */
+function npcsForLocation(store, locationId){
+  var npcs = store.world.npcs || {};
+  return Object.keys(npcs)
+    .filter(function(id){ return locationValue(npcs[id]).id === locationId; })
+    .map(function(id){ return {id: id, item: npcs[id]}; })
     .sort(function(a, b){ return compareNames(a.item.name, b.item.name); });
 }
 
@@ -269,21 +281,32 @@ function renderWorldDetail(edit){
       fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' + linkHtml + detailHtml + '</div>';
       return;
     }
-    var displayVal = f.type === 'faction-select'
-      ? (item[f.key] ? factionNameById(store, item[f.key]) : '')
-      : (item[f.key] || '');
+    if(f.type === 'faction-select'){
+      // An NPC's Faction / a Location's Faction -- same link treatment as
+      // everything else here, in place of the plain faction name.
+      var facId = item[f.key];
+      var facName = facId ? factionNameById(store, facId) : '';
+      var facLinkHtml = facName
+        ? '<button type="button" class="linked-item" data-category="factions" data-id="' + facId + '">' + escapeHtml(facName) + '</button>'
+        : '<div class="value">&mdash;</div>';
+      fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' + facLinkHtml + '</div>';
+      return;
+    }
+    var displayVal = item[f.key] || '';
     var extraHtml = '';
-    // Faction pages only: supplement the free-text HQ & Buildings / People
-    // fields with a live, clickable list of the Locations/NPCs that
-    // actually reference this faction — additive, not a replacement, and
-    // view-mode only (edit() form below never gets this). Rendered before
-    // the free text, same link-first order as an NPC's own Location field.
+    // Supplement a free-text field with a live, clickable list of other
+    // items that actually reference this one — additive, not a
+    // replacement, and view-mode only (edit() form below never gets this).
+    // Rendered before the free text, same link-first order as an NPC's own
+    // Location field.
     if(category === 'factions'){
       if(f.key === 'hqBuildings'){
         extraHtml = linkedListHtml('locations', itemsForFaction(store, 'locations', 'faction', state.worldItemId));
       } else if(f.key === 'people'){
         extraHtml = linkedListHtml('npcs', itemsForFaction(store, 'npcs', 'affiliation', state.worldItemId));
       }
+    } else if(category === 'locations' && f.key === 'notablePresence'){
+      extraHtml = linkedListHtml('npcs', npcsForLocation(store, state.worldItemId));
     }
     fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' +
       extraHtml + '<div class="value">' + escapeHtml(displayVal) + '</div></div>';
