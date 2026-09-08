@@ -1,5 +1,6 @@
 STORYMAPPER_CONTEXT.md
 data/*.json
+bin/seed-welcome-snapshot.js
 
 node_modules/
 dist/
