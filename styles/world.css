@@ -96,17 +96,71 @@
   overflow-wrap:anywhere;
 }
 .world-field .value:empty::before{content:'\2014';color:var(--ink-faint);}
-.linked-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
-.linked-list-label{
-  font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
-  color:var(--ink-faint);
-}
-.linked-list button.linked-item{
+.linked-list{display:flex;flex-direction:column;gap:5px;margin-bottom:6px;}
+/* Unscoped (not `.linked-list .linked-item`) so a lone link -- e.g. an
+   NPC's own Location, rendered with no wrapping list at all -- looks
+   identical to one of several stacked here on a Faction page: a small
+   bordered button, matching the app's .btn treatment, rather than an
+   underlined text link. */
+.linked-item{
+  display:inline-flex;
   align-self:flex-start;
-  background:none;border:none;padding:0;
-  font:inherit;
-  font-size:16px;
-  color:var(--interact);
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:5px;
+  padding:6px 11px;
+  font-family:'Karla',sans-serif;
+  font-weight:600;
+  font-size:15.5px;
+  color:var(--ink);
   cursor:pointer;
 }
-.linked-list button.linked-item:hover{color:var(--interact-strong);text-decoration:underline;}
+.linked-item:hover{border-color:var(--interact);color:var(--interact-strong);}
+
+/* ---------- NPC "Location" search/select (edit mode) ---------- */
+.location-field textarea{margin-top:8px;}
+.location-picker{position:relative;}
+.location-picker .location-search-input{padding-right:34px;}
+.location-clear-btn{
+  position:absolute;
+  top:0;right:0;
+  width:36px;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;
+  color:var(--ink-faint);
+  font-size:19.5px;
+  line-height:1;
+  cursor:pointer;
+}
+.location-clear-btn:hover{color:var(--interact-strong);}
+.location-search-results{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;right:0;
+  max-height:220px;
+  overflow-y:auto;
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);
+  border-radius:7px;
+  box-shadow:0 6px 18px var(--shadow);
+  z-index:10;
+  padding:4px;
+}
+.location-result-item{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:none;border:none;
+  font-family:'Karla',sans-serif;
+  font-size:15.5px;
+  color:var(--ink);
+  padding:7px 9px;
+  border-radius:5px;
+  cursor:pointer;
+}
+.location-result-item:hover{background:var(--interact);color:var(--surface-2);}
+.location-search-empty{
+  font-size:13.5px;
+  color:var(--ink-faint);
+  padding:8px 9px;
+}

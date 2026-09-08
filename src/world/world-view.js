@@ -42,7 +42,7 @@ var WORLD_SCHEMAS = {
       {key: 'role', label: 'Role / Title', type: 'text'},
       {key: 'description', label: 'Description', type: 'textarea'},
       {key: 'affiliation', label: 'Faction', type: 'faction-select'},
-      {key: 'location', label: 'Location', type: 'text'},
+      {key: 'location', label: 'Location', type: 'location'},
       {key: 'notes', label: 'Notes', type: 'textarea'}
     ],
     subtitle: function(item, store){
@@ -74,6 +74,13 @@ var WORLD_SCHEMAS = {
 };
 var WORLD_CATEGORIES = ['factions', 'npcs', 'locations'];
 
+/* Case-insensitive alphabetical compare, used everywhere a list of world
+   items (directory rows, search results, dropdown options, faction
+   cross-reference lists) is ordered by display name. */
+function compareNames(a, b){
+  return String(a || '').localeCompare(String(b || ''), undefined, {sensitivity: 'base'});
+}
+
 function truncateForRow(s){
   s = String(s || '').replace(/\s+/g, ' ').trim();
   return s.length > 60 ? s.slice(0, 57) + '…' : s;
@@ -91,9 +98,46 @@ function factionNameById(store, id){
   return f ? (f.name || 'Untitled Faction') : '';
 }
 
+/* An NPC's "Location" field used to be a plain free-text string; it's now
+   a real link to a Locations entry plus an optional free-text detail
+   ("which room", "usually found near the docks", etc.), stored as
+   {id, detail}. Normalizes either shape so old data (a bare string,
+   never migrated) keeps showing up as the detail line rather than
+   silently vanishing. */
+function locationValue(item){
+  var v = item.location;
+  if(v && typeof v === 'object') return {id: v.id || '', detail: v.detail || ''};
+  return {id: '', detail: v || ''};
+}
+
+function locationNameById(store, id){
+  var l = (store.world.locations || {})[id];
+  return l ? (l.name || 'Untitled Location') : '';
+}
+
+var LOCATION_SEARCH_RESULTS_MAX = 20;
+function locationSearchResultsHtml(store, query){
+  var locations = store.world.locations || {};
+  var q = (query || '').trim().toLowerCase();
+  var ids = Object.keys(locations).filter(function(id){
+    if(!q) return true;
+    return (locations[id].name || '').toLowerCase().indexOf(q) !== -1;
+  }).sort(function(a, b){ return compareNames(locations[a].name, locations[b].name); })
+    .slice(0, LOCATION_SEARCH_RESULTS_MAX);
+  if(!ids.length){
+    return '<div class="location-search-empty">' +
+      (Object.keys(locations).length ? 'No locations match &ldquo;' + escapeHtml(query) + '&rdquo;.' : 'No locations yet &mdash; add one in the Locations section.') +
+      '</div>';
+  }
+  return ids.map(function(id){
+    return '<button type="button" class="location-result-item" data-id="' + id + '">' +
+      escapeHtml(locations[id].name || 'Untitled Location') + '</button>';
+  }).join('');
+}
+
 function factionSelectOptionsHtml(store, selectedId){
   var factions = store.world.factions || {};
-  var ids = Object.keys(factions);
+  var ids = Object.keys(factions).sort(function(a, b){ return compareNames(factions[a].name, factions[b].name); });
   var html = '<option value="">— None —</option>';
   ids.forEach(function(fid){
     html += '<option value="' + fid + '"' + (fid === selectedId ? ' selected' : '') + '>' +
@@ -111,16 +155,18 @@ function itemsForFaction(store, category, keyField, factionId){
   var items = store.world[category] || {};
   return Object.keys(items)
     .filter(function(id){ return items[id][keyField] === factionId; })
-    .map(function(id){ return {id: id, item: items[id]}; });
+    .map(function(id){ return {id: id, item: items[id]}; })
+    .sort(function(a, b){ return compareNames(a.item.name, b.item.name); });
 }
 
 /* Renders a faction detail's supplementary "linked items" list — clickable
-   names of NPCs/Locations that reference this faction — shown below the
-   existing free-text field, in view mode only (never in the edit form,
-   since these links are derived, not something to hand-edit here). */
-function linkedListHtml(category, entries, label){
+   names of NPCs/Locations that reference this faction — shown above the
+   existing free-text field (same link-first, no section heading, treatment
+   as an NPC's Location field below), in view mode only (never in the edit
+   form, since these links are derived, not something to hand-edit here). */
+function linkedListHtml(category, entries){
   if(!entries.length) return '';
-  var html = '<div class="linked-list"><div class="linked-list-label">' + escapeHtml(label) + '</div>';
+  var html = '<div class="linked-list">';
   entries.forEach(function(e){
     var name = e.item.name || 'Untitled';
     html += '<button type="button" class="linked-item" data-category="' + category + '" data-id="' + e.id + '">' +
@@ -135,7 +181,7 @@ function renderWorldDirectory(){
   WORLD_CATEGORIES.forEach(function(cat){
     var schema = WORLD_SCHEMAS[cat];
     var items = store.world[cat] || {};
-    var ids = Object.keys(items);
+    var ids = Object.keys(items).sort(function(a, b){ return compareNames(items[a].name, items[b].name); });
     var listEl = elWorldLists[cat];
     if(!listEl) return;
     if(!ids.length){
@@ -210,6 +256,19 @@ function renderWorldDetail(edit){
   var fieldsHtml = '';
   schema.fields.forEach(function(f){
     if(f.key === 'name') return; // name is already the page title above
+    if(f.type === 'location'){
+      var loc = locationValue(item);
+      var locName = loc.id ? locationNameById(store, loc.id) : '';
+      // A link first (per the faction page's own NPCs/Locations linked-item
+      // pattern), then the free-text detail below it -- the link answers
+      // "where", the text answers "where exactly"/"how to find them there".
+      var linkHtml = locName
+        ? '<button type="button" class="linked-item" data-category="locations" data-id="' + loc.id + '">' + escapeHtml(locName) + '</button>'
+        : '<div class="value">&mdash;</div>';
+      var detailHtml = loc.detail ? '<div class="value location-detail">' + escapeHtml(loc.detail) + '</div>' : '';
+      fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' + linkHtml + detailHtml + '</div>';
+      return;
+    }
     var displayVal = f.type === 'faction-select'
       ? (item[f.key] ? factionNameById(store, item[f.key]) : '')
       : (item[f.key] || '');
@@ -217,21 +276,37 @@ function renderWorldDetail(edit){
     // Faction pages only: supplement the free-text HQ & Buildings / People
     // fields with a live, clickable list of the Locations/NPCs that
     // actually reference this faction — additive, not a replacement, and
-    // view-mode only (edit() form below never gets this).
+    // view-mode only (edit() form below never gets this). Rendered before
+    // the free text, same link-first order as an NPC's own Location field.
     if(category === 'factions'){
       if(f.key === 'hqBuildings'){
-        extraHtml = linkedListHtml('locations', itemsForFaction(store, 'locations', 'faction', state.worldItemId), 'Linked Locations');
+        extraHtml = linkedListHtml('locations', itemsForFaction(store, 'locations', 'faction', state.worldItemId));
       } else if(f.key === 'people'){
-        extraHtml = linkedListHtml('npcs', itemsForFaction(store, 'npcs', 'affiliation', state.worldItemId), 'Linked NPCs');
+        extraHtml = linkedListHtml('npcs', itemsForFaction(store, 'npcs', 'affiliation', state.worldItemId));
       }
     }
     fieldsHtml += '<div class="world-field"><label>' + escapeHtml(f.label) + '</label>' +
-      '<div class="value">' + escapeHtml(displayVal) + '</div>' + extraHtml + '</div>';
+      extraHtml + '<div class="value">' + escapeHtml(displayVal) + '</div></div>';
   });
   elWorldDetailFields.innerHTML = fieldsHtml;
 
   var editHtml = '';
   schema.fields.forEach(function(f){
+    if(f.type === 'location'){
+      var loc = locationValue(item);
+      var locName = loc.id ? locationNameById(store, loc.id) : '';
+      editHtml += '<div class="modal-row location-field">' +
+        '<label for="world-edit-location-search">' + escapeHtml(f.label) + '</label>' +
+        '<div class="location-picker">' +
+          '<input type="text" id="world-edit-location-search" class="location-search-input" placeholder="Search locations&hellip;" autocomplete="off" value="' + escapeHtml(locName) + '">' +
+          '<button type="button" class="location-clear-btn" id="world-edit-location-clear"' + (loc.id ? '' : ' hidden') + ' title="Clear location" aria-label="Clear location">&times;</button>' +
+          '<input type="hidden" id="world-edit-location-id" value="' + escapeHtml(loc.id) + '">' +
+          '<div class="location-search-results" id="world-edit-location-results" hidden></div>' +
+        '</div>' +
+        '<textarea id="world-edit-location-detail" rows="2" placeholder="Additional detail (optional) &mdash; a specific room, landmark, or how to find them there">' + escapeHtml(loc.detail) + '</textarea>' +
+      '</div>';
+      return;
+    }
     var val = escapeHtml(item[f.key] || '');
     var control;
     if(f.type === 'textarea'){
@@ -263,6 +338,75 @@ elWorldDetailFields.addEventListener('click', function(e){
   if(link) showWorldItem(link.dataset.category, link.dataset.id);
 });
 
+/* ---- NPC "Location" search/select (edit mode) ----
+   A lightweight combobox: typing filters store.world.locations by name,
+   clicking a result commits it (search box then shows that location's
+   name), and the × button clears it back to an empty search. Selection
+   uses `mousedown` rather than `click` and calls preventDefault() so the
+   browser never runs the search input's blur/focusout first -- the
+   classic "blur fires before click" race that would otherwise make a
+   result's click never register because the dropdown had already been
+   hidden out from under it. */
+function showLocationResults(){
+  var store = loadStore();
+  var input = document.getElementById('world-edit-location-search');
+  var results = document.getElementById('world-edit-location-results');
+  if(!input || !results) return;
+  results.innerHTML = locationSearchResultsHtml(store, input.value);
+  results.hidden = false;
+}
+function hideLocationResults(){
+  var results = document.getElementById('world-edit-location-results');
+  if(results) results.hidden = true;
+}
+function selectLocation(id, name){
+  var idEl = document.getElementById('world-edit-location-id');
+  var searchEl = document.getElementById('world-edit-location-search');
+  var clearBtn = document.getElementById('world-edit-location-clear');
+  if(idEl) idEl.value = id;
+  if(searchEl) searchEl.value = name;
+  if(clearBtn) clearBtn.hidden = false;
+  hideLocationResults();
+}
+function clearLocation(){
+  var idEl = document.getElementById('world-edit-location-id');
+  var searchEl = document.getElementById('world-edit-location-search');
+  var clearBtn = document.getElementById('world-edit-location-clear');
+  if(idEl) idEl.value = '';
+  if(searchEl) searchEl.value = '';
+  if(clearBtn) clearBtn.hidden = true;
+  if(searchEl) searchEl.focus();
+  showLocationResults();
+}
+elWorldDetailEditFields.addEventListener('input', function(e){
+  if(e.target.id === 'world-edit-location-search') showLocationResults();
+});
+elWorldDetailEditFields.addEventListener('focus', function(e){
+  if(e.target.id === 'world-edit-location-search') showLocationResults();
+}, true); // focus doesn't bubble -- capture phase is required for delegation
+elWorldDetailEditFields.addEventListener('focusout', function(e){
+  if(e.target.id !== 'world-edit-location-search') return;
+  // Long enough for a result/clear button's own mousedown handler (below)
+  // to run and act first; that handler doesn't re-focus the input, so
+  // there's no risk of this then clobbering a freshly-opened dropdown.
+  setTimeout(hideLocationResults, 150);
+});
+elWorldDetailEditFields.addEventListener('mousedown', function(e){
+  var result = e.target.closest('.location-result-item');
+  if(result){
+    e.preventDefault();
+    selectLocation(result.dataset.id, result.textContent);
+    return;
+  }
+  if(e.target.closest('#world-edit-location-clear')){
+    e.preventDefault();
+    clearLocation();
+  }
+});
+elWorldDetailEditFields.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && e.target.id === 'world-edit-location-search') hideLocationResults();
+});
+
 elWorldDetailEditBtn.addEventListener('click', function(){ setWorldDetailEditing(true); });
 elWorldDetailCancelBtn.addEventListener('click', function(){ renderWorldDetail(false); });
 
@@ -273,6 +417,12 @@ elWorldDetailSaveBtn.addEventListener('click', function(){
   var item = (store.world[category] || {})[id];
   if(!item) return;
   schema.fields.forEach(function(f){
+    if(f.type === 'location'){
+      var idEl = document.getElementById('world-edit-location-id');
+      var detailEl = document.getElementById('world-edit-location-detail');
+      item.location = {id: idEl ? idEl.value : '', detail: detailEl ? detailEl.value : ''};
+      return;
+    }
     var el = document.getElementById('world-edit-' + f.key);
     if(!el) return;
     item[f.key] = el.value;
