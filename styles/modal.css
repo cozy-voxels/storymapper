@@ -20,7 +20,7 @@
 }
 #modal h2{
   font-family:'Fraunces',serif;
-  font-size:18px;
+  font-size:22px;
   font-weight:600;
   margin:0 0 14px;
   color:var(--crimson-ink);
@@ -28,14 +28,14 @@
 .modal-row{margin-bottom:12px;}
 .modal-row label{
   display:block;
-  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
   color:var(--ink-faint);
   margin-bottom:4px;
 }
 .modal-row input, .modal-row textarea, .modal-row select{
   width:100%;
   font-family:'Karla',sans-serif;
-  font-size:13px;
+  font-size:16px;
   color:var(--ink);
   background:var(--surface);
   border:1px solid var(--border);
@@ -51,8 +51,8 @@
   margin-bottom:8px;
   align-items:flex-start;
 }
-.modal-fields-list .field-row input.key{width:120px;flex:0 0 auto;font-size:11.5px;}
-.modal-fields-list .field-row textarea.val{flex:1 1 auto;min-height:44px;font-size:12.5px;}
+.modal-fields-list .field-row input.key{width:120px;flex:0 0 auto;font-size:14px;}
+.modal-fields-list .field-row textarea.val{flex:1 1 auto;min-height:44px;font-size:15.5px;}
 .modal-fields-list .field-row button{
   flex:0 0 auto;
   background:none;border:1px solid var(--border);
@@ -63,7 +63,7 @@
 }
 .modal-fields-list .field-row button:hover{color:var(--interact-strong);border-color:var(--interact);}
 #add-field-btn{
-  font-size:11.5px;
+  font-size:14px;
   background:none;border:1px dashed var(--border-strong);
   color:var(--ink-soft);
   padding:6px 10px;border-radius:5px;cursor:pointer;
@@ -77,4 +77,4 @@
   border-top:1px solid var(--border);
 }
 .modal-actions .right{display:flex;gap:8px;}
-.helptext{font-size:11px;color:var(--ink-faint);margin:-8px 0 14px;}
+.helptext{font-size:13.5px;color:var(--ink-faint);margin:-8px 0 14px;}

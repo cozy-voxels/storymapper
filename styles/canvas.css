@@ -64,7 +64,7 @@ svg#wires g.wire-del circle{fill:var(--surface-2);stroke:var(--interact-strong);
 svg#wires g.wire-del text{
   fill:var(--interact-strong);
   font-family:'Karla',sans-serif;
-  font-size:13px;
+  font-size:16px;
   font-weight:700;
   text-anchor:middle;
   dominant-baseline:central;
@@ -83,7 +83,7 @@ svg#wires g.wire-label.cross rect{stroke:var(--lilac);}
 svg#wires g.wire-label text{
   fill:var(--ink-soft);
   font-family:'Karla',sans-serif;
-  font-size:10.5px;
+  font-size:13px;
   font-weight:600;
   text-anchor:middle;
   dominant-baseline:central;
@@ -108,7 +108,7 @@ svg#wires g.wire-label text{
 }
 .conn-label-chooser .clc-head{
   font-family:'Karla',sans-serif;
-  font-size:10px;
+  font-size:12.5px;
   font-weight:700;
   text-transform:uppercase;
   letter-spacing:0.04em;
@@ -121,7 +121,7 @@ svg#wires g.wire-label text{
   width:100%;
   cursor:pointer;
   font-family:'Karla',sans-serif;
-  font-size:12.5px;
+  font-size:15.5px;
   color:var(--ink);
   padding:7px 8px;
   border-radius:5px;
@@ -183,7 +183,7 @@ svg#wires g.wire-label text{
 .card-name{
   font-family:'Fraunces',serif;
   font-weight:600;
-  font-size:16px;
+  font-size:19.5px;
   line-height:1.22;
   color:var(--header-name);
   overflow-wrap:anywhere;
@@ -191,7 +191,7 @@ svg#wires g.wire-label text{
 .card-pageid{
   margin-top:3px;
   font-family:'IBM Plex Mono',monospace;
-  font-size:10.5px;
+  font-size:13px;
   color:var(--header-pageid);
   letter-spacing:0.01em;
   overflow-wrap:anywhere;
@@ -204,7 +204,7 @@ svg#wires g.wire-label text{
   background:transparent;
   color:var(--ink-faint);
   cursor:pointer;
-  font-size:12.5px;
+  font-size:15.5px;
   line-height:1;
 }
 .icon-btn:hover{background:var(--surface-2);border-color:var(--interact);color:var(--interact-strong);}
@@ -228,7 +228,7 @@ svg#wires g.wire-label text{
 .card-body{
   position:relative;
   padding:11px 12px 12px;
-  font-size:13px;
+  font-size:16px;
   line-height:1.48;
   color:var(--ink);
   overflow-wrap:anywhere;
@@ -239,7 +239,7 @@ svg#wires g.wire-label text{
 .card-body > .field-block:first-child{padding-right:32px;}
 .field-block + .field-block{margin-top:9px;}
 .field-label{
-  font-size:10px;
+  font-size:12.5px;
   font-weight:700;
   letter-spacing:0.07em;
   text-transform:uppercase;
@@ -272,7 +272,7 @@ ul.bullet-list.tone-note > li::before{background:var(--lilac);}
 ul.bullet-list li.label-line{padding-left:0;}
 ul.bullet-list li.label-line::before{display:none;}
 ul.bullet-list li.label-line{
-  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);
+  font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);
   margin-top:8px;
 }
 ul.bullet-sub{list-style:none;margin:3px 0 0;padding:0 0 0 15px;}
@@ -280,14 +280,14 @@ ul.bullet-sub > li{
   position:relative;
   padding-left:13px;
   margin:3px 0;
-  font-size:12px;
+  font-size:15px;
   color:var(--ink-soft);
 }
 ul.bullet-sub > li::before{
   content:'\2192';
   position:absolute;left:0;top:0;
   color:var(--ink-faint);
-  font-size:11px;
+  font-size:13.5px;
 }
 .journal{
   border-left:2.5px solid var(--lilac);
@@ -295,7 +295,7 @@ ul.bullet-sub > li::before{
   font-style:italic;
   color:var(--ink-soft);
 }
-.kv-row{display:flex;gap:6px;font-size:12.5px;}
+.kv-row{display:flex;gap:6px;font-size:15.5px;}
 .kv-row .k{color:var(--ink-faint);flex:0 0 auto;}
 .kv-row .v{color:var(--ink);}
 
@@ -303,7 +303,7 @@ ul.bullet-sub > li::before{
   margin-top:10px;
   background:none;border:none;
   color:var(--interact);
-  font-size:11.5px;
+  font-size:14px;
   font-weight:700;
   letter-spacing:0.03em;
   cursor:pointer;
@@ -360,7 +360,7 @@ ul.bullet-sub > li::before{
   border:none;
   background:transparent;
   color:var(--ink);
-  font-size:15px;
+  font-size:18.5px;
   cursor:pointer;
   display:flex;align-items:center;justify-content:center;
 }
@@ -369,7 +369,7 @@ ul.bullet-sub > li::before{
   width:44px;
   text-align:center;
   font-family:'IBM Plex Mono',monospace;
-  font-size:11px;
+  font-size:13.5px;
   color:var(--ink-soft);
   cursor:pointer;
 }
@@ -400,7 +400,7 @@ ul.bullet-sub > li::before{
   background:var(--interact);
   color:var(--surface-2);
   font-family:'Karla',sans-serif;
-  font-size:11.5px;
+  font-size:14px;
   font-weight:700;
   letter-spacing:0.02em;
   border-radius:5px;

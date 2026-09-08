@@ -4,7 +4,7 @@
    <style> in index.html, since Vite's production build injects the bundled
    stylesheet as a <link> in <head> before paint anyway. */
 :root{color-scheme:light}
-body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}
+body{margin:0;padding:0;font:16px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}
 img{max-width:100%}
 [hidden]:not([hidden=until-found]){display:none!important}
 
@@ -51,7 +51,7 @@ h1,h2,h3{text-wrap:balance;}
 #brand .mark{
   font-family:'Fraunces',serif;
   font-weight:700;
-  font-size:19px;
+  font-size:23.5px;
   letter-spacing:-0.01em;
   color:var(--crimson-ink);
 }
@@ -61,7 +61,7 @@ h1,h2,h3{text-wrap:balance;}
   flex:0 0 auto;
 }
 #placeholder-nav .nav-pill{
-  font-size:12.5px;
+  font-size:15.5px;
   padding:6px 12px;
   border-radius:5px;
   color:var(--ink-faint);
@@ -81,7 +81,7 @@ h1,h2,h3{text-wrap:balance;}
   flex:0 0 auto;
   padding:5px 20px;
   font-family:'Karla',sans-serif;
-  font-size:11px;
+  font-size:13.5px;
   font-weight:700;
   letter-spacing:0.03em;
   background:var(--header-bg);
@@ -91,7 +91,7 @@ h1,h2,h3{text-wrap:balance;}
 #quest-pill:empty{display:none;}
 .save-status{
   flex:1 1 auto;
-  font-size:10.5px;
+  font-size:13px;
   color:var(--ink-faint);
   opacity:0;
   transition:opacity .5s ease;
@@ -104,7 +104,7 @@ h1,h2,h3{text-wrap:balance;}
   flex:0 0 auto;
 }
 .btn{
-  font-size:12.5px;
+  font-size:15.5px;
   font-weight:600;
   padding:7px 12px;
   border-radius:5px;
@@ -134,7 +134,7 @@ h1,h2,h3{text-wrap:balance;}
 
 /* ---------- topbar "Options" dropdown ---------- */
 .dropdown{position:relative;flex:0 0 auto;}
-.dropdown .caret{font-size:9px;position:relative;top:1px;}
+.dropdown .caret{font-size:11px;position:relative;top:1px;}
 .dropdown-menu{
   position:absolute;
   top:calc(100% + 6px);
@@ -152,7 +152,7 @@ h1,h2,h3{text-wrap:balance;}
 }
 .dropdown-menu[hidden]{display:none;}
 .dropdown-item{
-  font-size:12.5px;
+  font-size:15.5px;
   font-weight:600;
   text-align:left;
   padding:8px 10px;

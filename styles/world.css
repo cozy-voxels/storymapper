@@ -13,7 +13,7 @@
 }
 #world-inner h1{
   font-family:'Fraunces',serif;
-  font-size:24px;
+  font-size:29.5px;
   font-weight:600;
   color:var(--crimson-ink);
   margin:0 0 4px;
@@ -31,14 +31,14 @@
 .world-item-name{
   font-family:'Fraunces',serif;
   font-weight:600;
-  font-size:13.5px;
+  font-size:16.5px;
   color:var(--ink);
   flex:1 1 auto;
   min-width:0;
   overflow-wrap:anywhere;
 }
 .world-item-sub{
-  font-size:11.5px;
+  font-size:14px;
   color:var(--ink-faint);
   flex:0 0 auto;
   max-width:45%;
@@ -50,7 +50,7 @@
   align-items:center;
   flex-wrap:wrap;
   gap:6px;
-  font-size:11.5px;
+  font-size:14px;
   color:var(--ink-faint);
   margin-bottom:16px;
 }
@@ -69,13 +69,13 @@
   margin-bottom:18px;
 }
 .world-detail-kind{
-  font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  font-size:13.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
   color:var(--ink-faint);
   margin:0 0 4px;
 }
 .world-detail-title{
   font-family:'Fraunces',serif;
-  font-size:23px;
+  font-size:28.5px;
   font-weight:600;
   color:var(--crimson-ink);
   margin:0;
@@ -84,12 +84,12 @@
 .world-field{margin-bottom:16px;}
 .world-field label{
   display:block;
-  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
   color:var(--ink-faint);
   margin-bottom:4px;
 }
 .world-field .value{
-  font-size:13px;
+  font-size:16px;
   color:var(--ink);
   line-height:1.55;
   white-space:pre-wrap;
@@ -98,14 +98,14 @@
 .world-field .value:empty::before{content:'\2014';color:var(--ink-faint);}
 .linked-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
 .linked-list-label{
-  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
   color:var(--ink-faint);
 }
 .linked-list button.linked-item{
   align-self:flex-start;
   background:none;border:none;padding:0;
   font:inherit;
-  font-size:13px;
+  font-size:16px;
   color:var(--interact);
   cursor:pointer;
 }
