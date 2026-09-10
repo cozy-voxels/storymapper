@@ -29,15 +29,19 @@ function isFixedKey(key){
   return FIXED_FIELD_DEFS.some(function(def){ return def.match.indexOf(lower) > -1; });
 }
 
-/* Recomputed from the modal's own live textarea values (not the last-saved
-   page) so a name typed just now shows up as a suggestion immediately,
-   without requiring a save first. */
+/* Recomputed from the modal's own live values (not the last-saved page) so
+   a name typed just now shows up as a suggestion immediately, without
+   requiring a save first. Includes the title and freeform "Other Fields"
+   rows too, not just the six fixed fields -- a name can be mentioned
+   anywhere on the page. */
 function currentDraftPage(){
-  return {
-    fields: FIXED_FIELD_DEFS.map(function(def){
-      return {key: def.canonical, value: document.getElementById(def.el).value};
-    })
-  };
+  var fields = FIXED_FIELD_DEFS.map(function(def){
+    return {key: def.canonical, value: document.getElementById(def.el).value};
+  });
+  elModalFieldsList.querySelectorAll('.field-row').forEach(function(row){
+    fields.push({key: row.querySelector('.key').value, value: row.querySelector('.val').value});
+  });
+  return {title: elModalName.value, fields: fields};
 }
 
 function renderSuggestions(suggestions){
@@ -65,9 +69,11 @@ elModalSuggestedLinks.addEventListener('click', function(e){
   addEntityLink(btn.dataset.category, btn.dataset.id);
 });
 
+/* Any input inside the modal can affect suggestions now -- title and the
+   freeform "Other Fields" rows are scanned too, not just the six fixed
+   fields -- so no target filtering here beyond "inside the modal". */
 var suggestDebounceTimer = null;
-elModal.addEventListener('input', function(e){
-  if(!FIXED_FIELD_DEFS.some(function(def){ return def.el === e.target.id; })) return;
+elModal.addEventListener('input', function(){
   clearTimeout(suggestDebounceTimer);
   suggestDebounceTimer = setTimeout(refreshSuggestions, 300);
 });

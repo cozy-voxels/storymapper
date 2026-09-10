@@ -75,13 +75,61 @@ export function migrateLegacyStore(){
   }
 }
 
+/* Repairs two data-integrity invariants that a bug elsewhere in the app
+   (or a hand-edited import) can violate: every quest's object key must
+   equal its own `.id` (a mismatch -- most concretely a key of "null" from
+   a quest record saved with `.id: null` -- makes it a member of whatever
+   questline its stale `.questlineId` happened to hold, rendering as a
+   second, uneditable "ghost" section there), and every page id must be
+   unique across the WHOLE store, not just within one quest (see the
+   nextPageId comment above -- a duplicate page id across two quests in
+   the same questline resolves to only one DOM card store-wide, so the
+   two quests' pages visually swap/hop on drag instead of moving
+   independently). Runs on every load so already-corrupted saved/imported
+   data self-heals; nothing is deleted, records just get a valid id. */
+function repairStoreIdentity(store){
+  var quests = store.quests || {};
+  Object.keys(quests).forEach(function(key){
+    var quest = quests[key];
+    if(!quest || typeof quest !== 'object') return;
+    if(!quest.id || quest.id !== key){
+      delete quests[key];
+      quest.id = genId();
+      quests[quest.id] = quest;
+    }
+  });
+  var seenPageIds = {};
+  Object.keys(quests).forEach(function(qid){
+    var quest = quests[qid];
+    var idMap = {};
+    var allPages = (quest.pages || []).concat(
+      (quest.trash || []).map(function(t){ return t.page; }).filter(Boolean)
+    );
+    allPages.forEach(function(p){
+      if(!p || !p.id) return;
+      if(seenPageIds[p.id]){
+        var freshId = 'p' + (store.nextPageId++);
+        idMap[p.id] = freshId;
+        p.id = freshId;
+      }
+      seenPageIds[p.id] = true;
+    });
+    if(Object.keys(idMap).length){
+      (quest.connections || []).forEach(function(c){
+        if(idMap[c.from]) c.from = idMap[c.from];
+        if(idMap[c.to]) c.to = idMap[c.to];
+      });
+    }
+  });
+}
+
 /* Brings any previously-saved store up to the current schema: adds a
-   questlines map if missing, and computes safe global nextPageId/
-   nextConnId counters by scanning every quest's existing page and
-   connection ids (needed because those counters used to live per-quest,
-   which could never collide since only one quest was ever shown at a
-   time — now that a whole questline can render several quests' pages
-   together, ids must be unique across the whole store). */
+   questlines map if missing, computes safe global nextPageId/nextConnId
+   counters by scanning every quest's existing page and connection ids
+   (needed because those counters used to live per-quest, which could
+   never collide since only one quest was ever shown at a time — now that
+   a whole questline can render several quests' pages together, ids must
+   be unique across the whole store), and runs repairStoreIdentity(). */
 export function ensureStoreShape(store){
   if(!store.questlines || typeof store.questlines !== 'object') store.questlines = {};
   if(typeof store.activeQuestlineId === 'undefined') store.activeQuestlineId = null;
@@ -91,31 +139,33 @@ export function ensureStoreShape(store){
   if(!store.world.factions || typeof store.world.factions !== 'object') store.world.factions = {};
   if(!store.world.npcs || typeof store.world.npcs !== 'object') store.world.npcs = {};
   if(!store.world.locations || typeof store.world.locations !== 'object') store.world.locations = {};
-  if(typeof store.nextPageId === 'number' && typeof store.nextConnId === 'number') return store;
-  var maxPage = 0, maxConn = 0;
-  function trackPage(id){
-    var n = parseInt(String(id).replace(/^p/, ''), 10);
-    if(!isNaN(n) && n > maxPage) maxPage = n;
+  if(!(typeof store.nextPageId === 'number' && typeof store.nextConnId === 'number')){
+    var maxPage = 0, maxConn = 0;
+    var trackPage = function(id){
+      var n = parseInt(String(id).replace(/^p/, ''), 10);
+      if(!isNaN(n) && n > maxPage) maxPage = n;
+    };
+    var trackConn = function(id){
+      var n = parseInt(String(id).replace(/^w/, ''), 10);
+      if(!isNaN(n) && n > maxConn) maxConn = n;
+    };
+    Object.keys(store.quests || {}).forEach(function(qid){
+      var q = store.quests[qid];
+      (q.pages || []).forEach(function(p){ trackPage(p.id); });
+      (q.connections || []).forEach(function(c){ trackConn(c.id); });
+      (q.trash || []).forEach(function(t){ if(t.page) trackPage(t.page.id); });
+    });
+    (store.trashedQuests || []).forEach(function(entry){
+      var q = entry.quest;
+      if(!q) return;
+      (q.pages || []).forEach(function(p){ trackPage(p.id); });
+      (q.connections || []).forEach(function(c){ trackConn(c.id); });
+      (q.trash || []).forEach(function(t){ if(t.page) trackPage(t.page.id); });
+    });
+    store.nextPageId = maxPage + 1;
+    store.nextConnId = maxConn + 1;
   }
-  function trackConn(id){
-    var n = parseInt(String(id).replace(/^w/, ''), 10);
-    if(!isNaN(n) && n > maxConn) maxConn = n;
-  }
-  Object.keys(store.quests || {}).forEach(function(qid){
-    var q = store.quests[qid];
-    (q.pages || []).forEach(function(p){ trackPage(p.id); });
-    (q.connections || []).forEach(function(c){ trackConn(c.id); });
-    (q.trash || []).forEach(function(t){ if(t.page) trackPage(t.page.id); });
-  });
-  (store.trashedQuests || []).forEach(function(entry){
-    var q = entry.quest;
-    if(!q) return;
-    (q.pages || []).forEach(function(p){ trackPage(p.id); });
-    (q.connections || []).forEach(function(c){ trackConn(c.id); });
-    (q.trash || []).forEach(function(t){ if(t.page) trackPage(t.page.id); });
-  });
-  store.nextPageId = maxPage + 1;
-  store.nextConnId = maxConn + 1;
+  repairStoreIdentity(store);
   return store;
 }
 

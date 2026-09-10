@@ -1,18 +1,35 @@
 /* ================= link suggestions =================
-   Scans a page's own prose fields for NPC/Location names that aren't
-   linked yet and offers them up in the edit modal (see
-   src/editor/modal.js's "Suggested links" panel) -- manual-add-only, this
-   just surfaces candidates, it never links anything itself. */
+   Scans everything on a page -- title and every field, prose or not --
+   for NPC/Location names that aren't linked yet and offers them up in the
+   edit modal (see src/editor/modal.js's "Suggested links" panel) --
+   manual-add-only, this just surfaces candidates, it never links anything
+   itself. Previously this only looked at a hand-picked whitelist of
+   "prose" field keys (Dialog/JournalText/Objectives/Response(s)), which
+   meant a name styled with QL color/bold tags in Requirements, LoadActions,
+   the page title, or a freeform field was silently invisible -- exactly
+   the case of a quest's Requirements/Objectives text calling out an NPC's
+   full display name, e.g. "{#ca9d6e}{b}Maximilian Boom the Arena
+   Showman{/}{/}". There's nothing about any field that makes a name
+   mentioned in it a worse suggestion, so now everything is scanned. */
 import { plainTextForMatching, compareNames } from '../utils/text.js';
 
-var TEXT_FIELD_KEYS = ['dialog', 'journaltext', 'objectives', 'response(s)', 'responses'];
-
 function pageTextBlob(page){
-  return (page.fields || [])
-    .filter(function(f){ return TEXT_FIELD_KEYS.indexOf(f.key.toLowerCase()) !== -1; })
-    .map(function(f){ return plainTextForMatching(f.value); })
-    .join(' \n ')
-    .toLowerCase();
+  var parts = (page.fields || []).map(function(f){ return plainTextForMatching(f.value); });
+  if(page.title) parts.unshift(plainTextForMatching(page.title));
+  return parts.join(' \n ').toLowerCase();
+}
+
+function escapeRegExp(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/* Word-boundary match rather than a bare substring check, so an NPC named
+   "Max" doesn't get suggested off the middle of "Maximilian Boom", while a
+   full name like "Maximilian Boom" still matches inside the longer styled
+   text "Maximilian Boom the Arena Showman". */
+function nameAppearsInBlob(name, blob){
+  var re = new RegExp('\\b' + escapeRegExp(name.toLowerCase()) + '\\b');
+  return re.test(blob);
 }
 
 /* linkedIds: {npcs: [...ids already linked], locations: [...]} -- excluded
@@ -30,7 +47,7 @@ export function suggestLinks(page, store, linkedIds){
       if(linked.indexOf(id) !== -1) return;
       var name = (items[id].name || '').trim();
       if(!name) return;
-      if(blob.indexOf(name.toLowerCase()) !== -1){
+      if(nameAppearsInBlob(name, blob)){
         suggestions.push({category: category, id: id, name: name});
       }
     });

@@ -1,4 +1,4 @@
-import { loadStore } from '../state/store.js';
+import { loadStore, state } from '../state/store.js';
 import { elExportAllBtn } from '../dom.js';
 import { persistCurrent } from '../state/persist.js';
 import { questToJsonString } from './quest-json-export.js';
@@ -30,7 +30,13 @@ function downloadTextFile(filename, text){
 }
 
 export function exportAllData(){
-  persistCurrent(); // flush any pending edit so the dump isn't stale
+  // Only flush if something is actually open -- state.pages/questName/etc.
+  // are stale leftovers from whatever was last open while in the Library
+  // or World views (see views.js's showLibraryView), so persisting
+  // unconditionally here used to write a phantom quest keyed by
+  // state.questId === null (JS coerces store.quests[null] to the key
+  // "null") full of that stale data.
+  if(state.questId || state.activeQuestlineId) persistCurrent();
   var store = loadStore();
   var stamp = new Date().toISOString().slice(0, 10);
   downloadTextFile('storymapper-export-' + stamp + '.json', JSON.stringify(store, null, 2));

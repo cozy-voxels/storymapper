@@ -53,7 +53,7 @@ export function updateTopbarForView(){
   if(elAddCardBtn) elAddCardBtn.style.display = singleQuest ? '' : 'none';
   if(elRelayoutBtn) elRelayoutBtn.style.display = singleQuest ? '' : 'none';
   if(elValidateQuestBtn) elValidateQuestBtn.style.display = singleQuest ? '' : 'none';
-  if(elLinkedItemsToggle) elLinkedItemsToggle.style.display = singleQuest ? '' : 'none';
+  if(elLinkedItemsToggle) elLinkedItemsToggle.style.display = (singleQuest || wholeQuestline) ? '' : 'none';
   if(elClearCrossBtn) elClearCrossBtn.style.display = wholeQuestline ? '' : 'none';
   if(elNavLibraryPill) elNavLibraryPill.classList.toggle('active', state.view === 'library');
   if(elNavWorldPill) elNavWorldPill.classList.toggle('active', state.view === 'world' || state.view === 'world-item');

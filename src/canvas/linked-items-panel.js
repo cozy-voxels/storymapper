@@ -1,11 +1,13 @@
 /* ================= linked items sidebar (canvas) =================
-   The quest-level aggregate of every NPC/Location linked from any of the
-   current quest's pages, deliberately NOT shown per-card (the same NPC
-   often recurs across many pages, which would be repetitive there). A
-   toggleable sidebar docked to the left of the canvas -- not a modal --
-   so it stays visible alongside the quest while working, rather than
-   blocking it the way the Trash/Validate panels do (those are genuinely
-   modal actions; this is a reference panel meant to be left open). */
+   The aggregate of every NPC/Location linked from any page currently on
+   the canvas -- state.pages for a single quest, or the merged set of
+   every member quest's pages when a whole questline is open -- shown
+   deliberately NOT per-card (the same NPC often recurs across many
+   pages, which would be repetitive there). A toggleable sidebar docked
+   to the left of the canvas -- not a modal -- so it stays visible
+   alongside the quest/questline while working, rather than blocking it
+   the way the Trash/Validate panels do (those are genuinely modal
+   actions; this is a reference panel meant to be left open). */
 import { state, loadStore } from '../state/store.js';
 import { elLinkedItemsBtn, elLinkedItemsSidebar, elLinkedItemsSidebarClose, elLinkedItemsList } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
