@@ -77,8 +77,13 @@ export function computeMutualReturnIds(connections){
 }
 
 export function renderWires(){
-  while(elWires.childNodes.length > 1){
-    elWires.removeChild(elWires.lastChild);
+  // .children (elements only) rather than .childNodes -- index.html's
+  // <defs> (holding the arrowhead markers) is formatted with surrounding
+  // whitespace, which childNodes counts as a text node ahead of <defs>,
+  // so the childNodes version of this loop deleted <defs> itself on the
+  // very first render and every arrow silently lost its marker-end.
+  while(elWires.children.length > 1){
+    elWires.removeChild(elWires.lastElementChild);
   }
   var returnIds = computeMutualReturnIds(state.connections);
   state.connections.forEach(function(conn){
