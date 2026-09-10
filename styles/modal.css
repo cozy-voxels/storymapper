@@ -41,7 +41,12 @@
   border:1px solid var(--border);
   border-radius:5px;
   padding:8px 9px;
-  resize:vertical;
+}
+#modal .modal-row textarea,
+#world-detail-edit-fields textarea{
+  resize:none;
+  overflow:hidden;
+  min-height:44px;
 }
 .modal-row input:focus, .modal-row textarea:focus, .modal-row select:focus{outline:2px solid var(--focus);outline-offset:1px;}
 .modal-row.pageid input{font-family:'IBM Plex Mono',monospace;}
@@ -75,6 +80,13 @@
   margin-top:16px;
   padding-top:14px;
   border-top:1px solid var(--border);
+}
+#modal .modal-actions{
+  position:sticky;
+  bottom:-20px;
+  margin:16px -20px -20px;
+  padding:14px 20px 20px;
+  background:var(--surface-2);
 }
 .modal-actions .right{display:flex;gap:8px;}
 .helptext{font-size:13.5px;color:var(--ink-faint);margin:-8px 0 14px;}

@@ -8,6 +8,7 @@ import {
   elWorldDetailCrumbWorld, elWorldDetailCrumbCategory, elWorldDetailCrumbName
 } from '../dom.js';
 import { escapeHtml, compareNames } from '../utils/text.js';
+import { autoSizeTextarea } from '../utils/textarea.js';
 import { closeConnLabelChooser } from '../render/wires.js';
 import { persistCurrent, cancelAutosave, flashSaved } from '../state/persist.js';
 import { updateTopbarForView } from '../views.js';
@@ -362,6 +363,7 @@ function setWorldDetailEditing(editing){
   elWorldDetailViewMode.hidden = editing;
   elWorldDetailEditMode.hidden = !editing;
   if(editing){
+    elWorldDetailEditFields.querySelectorAll('textarea').forEach(autoSizeTextarea);
     var first = elWorldDetailEditFields.querySelector('input, textarea');
     if(first) first.focus();
   }
@@ -415,6 +417,7 @@ function clearLocation(){
   showLocationResults();
 }
 elWorldDetailEditFields.addEventListener('input', function(e){
+  if(e.target.tagName === 'TEXTAREA') autoSizeTextarea(e.target);
   if(e.target.id === 'world-edit-location-search') showLocationResults();
 });
 elWorldDetailEditFields.addEventListener('focus', function(e){

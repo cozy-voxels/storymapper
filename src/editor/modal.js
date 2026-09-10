@@ -4,6 +4,7 @@ import {
   elModalSuggestedLinksRow, elModalSuggestedLinks
 } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
+import { autoSizeTextarea } from '../utils/textarea.js';
 import { toWorld } from '../canvas/pan-zoom.js';
 import { renderAll, removePage } from '../render/cards.js';
 import { initEntityPickers, getEntityPickerIds, addEntityLink } from '../ui/entity-picker.js';
@@ -73,7 +74,8 @@ elModalSuggestedLinks.addEventListener('click', function(e){
    freeform "Other Fields" rows are scanned too, not just the six fixed
    fields -- so no target filtering here beyond "inside the modal". */
 var suggestDebounceTimer = null;
-elModal.addEventListener('input', function(){
+elModal.addEventListener('input', function(e){
+  if(e.target.tagName === 'TEXTAREA') autoSizeTextarea(e.target);
   clearTimeout(suggestDebounceTimer);
   suggestDebounceTimer = setTimeout(refreshSuggestions, 300);
 });
@@ -84,7 +86,9 @@ function fieldRow(key, value){
   row.innerHTML = '<input class="key" type="text" value="' + escapeHtml(key) + '">' +
     '<textarea class="val" rows="2"></textarea>' +
     '<button type="button" title="Remove field" aria-label="Remove field">&times;</button>';
-  row.querySelector('.val').value = value;
+  var valTa = row.querySelector('.val');
+  valTa.value = value;
+  autoSizeTextarea(valTa);
   row.querySelector('button').addEventListener('click', function(){ row.remove(); });
   return row;
 }
@@ -93,6 +97,7 @@ export function openEditor(cardId){
   var page = pageById(cardId);
   if(!page) return;
   state.editingCardId = cardId;
+  elModalBackdrop.classList.add('open');
   elModalName.value = page.title;
   elModalPageId.value = page.pageId;
 
@@ -100,7 +105,9 @@ export function openEditor(cardId){
     var found = page.fields.filter(function(f){
       return def.match.indexOf(f.key.toLowerCase()) > -1;
     })[0];
-    document.getElementById(def.el).value = found ? found.value : '';
+    var ta = document.getElementById(def.el);
+    ta.value = found ? found.value : '';
+    autoSizeTextarea(ta);
   });
 
   elModalFieldsList.innerHTML = '';
@@ -111,7 +118,6 @@ export function openEditor(cardId){
   initEntityPickers(page, refreshSuggestions);
   refreshSuggestions();
   document.getElementById('modal-title').textContent = 'Edit page';
-  elModalBackdrop.classList.add('open');
   elModalName.focus();
 }
 
