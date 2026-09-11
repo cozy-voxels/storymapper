@@ -223,3 +223,21 @@
   border-color:var(--status-green);
 }
 .quest-row .btn{flex:0 0 auto;padding:5px 10px;font-size:14px;}
+.quest-row .btn.icon-btn{padding:0;}
+
+.dropdown-item-select{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  cursor:default;
+}
+.dropdown-item-select select{
+  font-size:14px;
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:5px;
+  padding:4px 6px;
+  width:100%;
+  max-width:none;
+}

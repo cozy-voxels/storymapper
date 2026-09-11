@@ -131,6 +131,16 @@ h1,h2,h3{text-wrap:balance;}
 .btn.quiet-danger{background:none;border-color:transparent;color:var(--ink-faint);}
 .btn.quiet-danger:hover{background:var(--surface);border-color:var(--interact);color:var(--interact-strong);}
 .btn.quiet-danger.armed{background:var(--crimson-soft);border-color:var(--crimson);color:var(--crimson-ink);}
+.btn.icon-btn{
+  width:32px;
+  height:32px;
+  padding:0;
+  justify-content:center;
+  border-color:transparent;
+  background:none;
+  color:var(--ink-faint);
+}
+.btn.icon-btn:hover{background:var(--surface-2);border-color:var(--border-strong);color:var(--interact-strong);}
 
 /* ---------- topbar "Options" dropdown ---------- */
 .dropdown{position:relative;flex:0 0 auto;}

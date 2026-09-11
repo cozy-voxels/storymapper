@@ -25,14 +25,27 @@ function questStatusOptionsHtml(selected){
   return html;
 }
 
+function rowMenuHtml(items){
+  return '<div class="dropdown row-menu">' +
+      '<button class="btn icon-btn" type="button" data-role="menu-toggle" aria-haspopup="true" aria-expanded="false" title="More actions">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>' +
+      '</button>' +
+      '<div class="dropdown-menu" data-role="menu" hidden>' + items + '</div>' +
+    '</div>';
+}
+
 function questRowHtml(store, quest){
+  var menu = '<label class="dropdown-item dropdown-item-select">Move to questline' +
+      '<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
+    '</label>' +
+    '<button type="button" class="dropdown-item" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
+    '<button type="button" class="dropdown-item" data-role="duplicate-quest" title="Duplicate quest">Duplicate</button>' +
+    '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-quest" title="Delete quest">Delete</button>';
   return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
       '<span class="quest-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
       '<select class="quest-status" data-role="status" data-status="' + escapeHtml(quest.status || '') + '" title="Status">' + questStatusOptionsHtml(quest.status) + '</select>' +
-      '<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
       '<button class="btn" type="button" data-role="open-quest">Open</button>' +
-      '<button class="btn" type="button" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
-      '<button class="btn quiet-danger" type="button" data-role="delete-quest" title="Delete quest">&times;</button>' +
+      rowMenuHtml(menu) +
     '</div>';
 }
 
@@ -51,6 +64,60 @@ function trashQuest(questId){
   store.trashedQuests.push({quest: quest, deletedAt: Date.now()});
   if(store.activeQuestId === questId) store.activeQuestId = null;
   saveStore(store);
+}
+
+/* Exact copy of a quest -- same pages/content/layout/linked items and
+   same connections/arrows, staying in the same questline (if any) --
+   named "{name} Copy" so there's no naming prompt to get in the way.
+   Pages and connections get freshly-minted ids off the same global
+   counters everything else uses (see nextPageId/nextConnId in store.js),
+   with a from/to id remap so the copied connections still point at the
+   copied pages instead of the originals. */
+function duplicateQuest(questId){
+  var store = loadStore();
+  var quest = store.quests[questId];
+  if(!quest) return;
+  var idMap = {};
+  function clonePage(p){
+    var freshId = 'p' + (store.nextPageId++);
+    idMap[p.id] = freshId;
+    return Object.assign({}, p, {
+      id: freshId,
+      fields: (p.fields || []).map(function(f){ return Object.assign({}, f); }),
+      linkedNpcIds: (p.linkedNpcIds || []).slice(),
+      linkedLocationIds: (p.linkedLocationIds || []).slice()
+    });
+  }
+  var pages = (quest.pages || []).map(clonePage);
+  var trash = (quest.trash || []).map(function(t){
+    return {page: t.page ? clonePage(t.page) : null, deletedAt: t.deletedAt};
+  });
+  var connections = (quest.connections || []).map(function(c){
+    return Object.assign({}, c, {
+      id: 'w' + (store.nextConnId++),
+      from: idMap[c.from] || c.from,
+      to: idMap[c.to] || c.to
+    });
+  });
+  var newId = genId();
+  store.quests[newId] = {
+    id: newId,
+    name: (quest.name || 'Untitled Quest') + ' Copy',
+    questlineId: quest.questlineId || null,
+    status: quest.status,
+    description: quest.description,
+    repeatable: quest.repeatable,
+    rewards: quest.rewards,
+    requirements: quest.requirements,
+    pages: pages,
+    connections: connections,
+    trash: trash,
+    pan: quest.pan ? Object.assign({}, quest.pan) : {x: 60, y: 40},
+    zoom: quest.zoom,
+    updatedAt: Date.now()
+  };
+  saveStore(store);
+  return newId;
 }
 
 export function restoreQuestFromTrash(index){
@@ -105,13 +172,14 @@ export function renderLibrary(){
       var ql = store.questlines[qlId];
       var members = questIds.filter(function(qid){ return store.quests[qid].questlineId === qlId; })
         .map(function(qid){ return store.quests[qid]; });
+      var qlMenu = '<button type="button" class="dropdown-item" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
+        '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">Delete questline</button>';
       qlHtml += '<div class="questline-block' + (ql.collapsed ? ' collapsed' : '') + '" data-questline-id="' + qlId + '">' +
         '<div class="questline-head" data-role="head">' +
           '<span class="chev">&#9662;</span>' +
           '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>' +
           '<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : ' disabled title="Add a quest to this questline first"') + '>Open questline</button>' +
-          '<button class="btn" type="button" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
-          '<button class="btn quiet-danger" type="button" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">&times;</button>' +
+          rowMenuHtml(qlMenu) +
         '</div>' +
         '<div class="quest-list">' +
           (members.length ? members.map(function(q){ return questRowHtml(store, q); }).join('') : '<div class="library-empty">No quests assigned yet.</div>') +
@@ -181,7 +249,36 @@ document.getElementById('new-quest-btn').addEventListener('click', function(){
   switchToQuest(id);
 });
 
+// Row/questline-head "⋮" menus: only one open at a time, closed by an
+// outside click, Escape, or (in the per-view click handlers below) after
+// a menu item completes its action -- mirroring the topbar "Options" menu
+// pattern in src/views.js.
+function closeAllRowMenus(except){
+  document.querySelectorAll('.row-menu > [data-role="menu"]:not([hidden])').forEach(function(menu){
+    if(menu === except) return;
+    menu.hidden = true;
+    menu.closest('.row-menu').querySelector('[data-role="menu-toggle"]').setAttribute('aria-expanded', 'false');
+  });
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.row-menu')) closeAllRowMenus();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAllRowMenus();
+});
+function handleRowMenuToggle(e){
+  var toggle = e.target.closest('[data-role="menu-toggle"]');
+  if(!toggle) return false;
+  var menu = toggle.closest('.row-menu').querySelector('[data-role="menu"]');
+  var willOpen = menu.hidden;
+  closeAllRowMenus(willOpen ? menu : null);
+  menu.hidden = !willOpen;
+  toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  return true;
+}
+
 elQuestlineGroups.addEventListener('click', function(e){
+  if(handleRowMenuToggle(e)) return;
   var nameEl = e.target.closest('.questline-name');
   if(nameEl){
     // Capture the questline id up front, before startInlineRename swaps
@@ -204,6 +301,7 @@ elQuestlineGroups.addEventListener('click', function(e){
   var exportQuestlineBtn = e.target.closest('[data-role="export-questline"]');
   if(exportQuestlineBtn){
     var qlIdForExport = exportQuestlineBtn.closest('.questline-block').dataset.questlineId;
+    closeAllRowMenus();
     exportQuestlineBtn.disabled = true;
     exportQuestline(qlIdForExport).then(function(result){
       exportQuestlineBtn.disabled = false;
@@ -236,7 +334,10 @@ elQuestlineGroups.addEventListener('click', function(e){
   handleQuestRowClick(e);
 });
 
-elStandaloneQuests.addEventListener('click', handleQuestRowClick);
+elStandaloneQuests.addEventListener('click', function(e){
+  if(handleRowMenuToggle(e)) return;
+  handleQuestRowClick(e);
+});
 
 // A sandboxed artifact page can't rely on window.confirm() (it's silently
 // suppressed rather than shown), so any destructive action in the library
@@ -296,7 +397,14 @@ function handleQuestRowClick(e){
     return;
   }
   if(e.target.closest('[data-role="export-quest"]')){
+    closeAllRowMenus();
     exportQuest(questId);
+    return;
+  }
+  if(e.target.closest('[data-role="duplicate-quest"]')){
+    duplicateQuest(questId);
+    flashStatus('Quest duplicated', 2000);
+    renderLibrary();
   }
 }
 
