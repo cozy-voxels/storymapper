@@ -2,6 +2,7 @@ import { loadStore, state } from '../state/store.js';
 import { elExportAllBtn } from '../dom.js';
 import { persistCurrent } from '../state/persist.js';
 import { questToJsonString } from './quest-json-export.js';
+import { slugify } from '../utils/text.js';
 
 /* ================= export actions =================
    The three export needs, each a different shape:
@@ -47,7 +48,7 @@ export function exportQuest(questId){
   var quest = store.quests[questId];
   if(!quest) return;
   var questlineName = quest.questlineId && store.questlines[quest.questlineId] && store.questlines[quest.questlineId].name;
-  downloadTextFile(questId + '.json', questToJsonString(quest, questlineName));
+  downloadTextFile(slugify(quest.name) + '.json', questToJsonString(quest, questlineName));
 }
 
 /* Uses the File System Access API (Chrome/Edge) so every member quest can
@@ -72,17 +73,26 @@ export async function exportQuestline(qlId){
     if(e && e.name === 'AbortError') return {ok: false, message: null};
     return {ok: false, message: 'Could not access that folder: ' + e.message};
   }
-  var qlDirHandle = await parentHandle.getDirectoryHandle(qlId, {create: true});
+  var qlSlug = slugify(ql.name);
+  var qlDirHandle = await parentHandle.getDirectoryHandle(qlSlug, {create: true});
   var written = 0;
+  var usedSlugs = {};
   for(var i = 0; i < memberIds.length; i++){
     var quest = store.quests[memberIds[i]];
-    var fileHandle = await qlDirHandle.getFileHandle(quest.id + '.json', {create: true});
+    var slug = slugify(quest.name);
+    if(usedSlugs[slug]){
+      usedSlugs[slug]++;
+      slug += '_' + usedSlugs[slug];
+    } else {
+      usedSlugs[slug] = 1;
+    }
+    var fileHandle = await qlDirHandle.getFileHandle(slug + '.json', {create: true});
     var writable = await fileHandle.createWritable();
     await writable.write(questToJsonString(quest, ql.name));
     await writable.close();
     written++;
   }
-  return {ok: true, message: 'Exported ' + written + ' quest' + (written === 1 ? '' : 's') + ' to "' + qlId + '/"'};
+  return {ok: true, message: 'Exported ' + written + ' quest' + (written === 1 ? '' : 's') + ' to "' + qlSlug + '/"'};
 }
 
 if(elExportAllBtn) elExportAllBtn.addEventListener('click', exportAllData);

@@ -74,6 +74,56 @@
   padding:6px 10px;border-radius:5px;cursor:pointer;
 }
 #add-field-btn:hover{border-color:var(--interact);color:var(--interact-strong);}
+
+/* ---------- response rows (Response(s) editor) ---------- */
+#modal-responses-list{display:flex;flex-direction:column;gap:10px;margin-bottom:8px;}
+.response-row{
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:8px 9px;
+  background:var(--surface);
+}
+.response-row-head{display:flex;gap:6px;align-items:flex-start;}
+.response-row-head textarea.resp-text{flex:1 1 auto;min-height:36px;font-size:15.5px;}
+.response-remove{
+  flex:0 0 auto;
+  background:none;border:1px solid var(--border);
+  color:var(--ink-faint);
+  border-radius:5px;
+  width:28px;height:28px;
+  cursor:pointer;
+}
+.response-remove:hover{color:var(--interact-strong);border-color:var(--interact);}
+.response-sub{margin-top:8px;}
+.response-sub-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.response-sub-head label{
+  font-size:11.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ink-faint);
+}
+.response-sub-remove{
+  background:none;border:none;
+  color:var(--ink-faint);
+  font-size:12.5px;
+  cursor:pointer;
+  text-decoration:underline;
+}
+.response-sub-remove:hover{color:var(--interact-strong);}
+.response-sub textarea{min-height:36px;font-size:14.5px;}
+.response-row-toggles{display:flex;gap:8px;margin-top:8px;}
+.response-add-sub{
+  font-size:12.5px;
+  background:none;border:1px dashed var(--border-strong);
+  color:var(--ink-soft);
+  padding:3px 8px;border-radius:5px;cursor:pointer;
+}
+.response-add-sub:hover{border-color:var(--interact);color:var(--interact-strong);}
+#add-response-btn{
+  font-size:14px;
+  background:none;border:1px dashed var(--border-strong);
+  color:var(--ink-soft);
+  padding:6px 10px;border-radius:5px;cursor:pointer;
+}
+#add-response-btn:hover{border-color:var(--interact);color:var(--interact-strong);}
 .modal-actions{
   display:flex;
   justify-content:space-between;

@@ -1,5 +1,5 @@
 import { state } from '../state/store.js';
-import { expandNoteFields } from '../utils/text.js';
+import { expandNoteFields, normalizeBr } from '../utils/text.js';
 
 /* ================= markdown parsing ================= */
 export function parseMarkdownTables(md){
@@ -45,7 +45,7 @@ export function tablesToPages(tables){
       var keyLower = key.toLowerCase();
       if(keyLower === 'npc name' && !title){ title = val; return; }
       if(keyLower === 'page id' && !pageId){ pageId = val; return; }
-      fields.push({key: key, value: val});
+      fields.push({key: key, value: normalizeBr(val)});
     });
     return {
       id: 'p' + (state.nextPageId++),

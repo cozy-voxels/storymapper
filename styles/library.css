@@ -131,7 +131,6 @@
   border:1px solid var(--border);
   border-radius:9px;
   margin-bottom:12px;
-  overflow:hidden;
 }
 .questline-head{
   display:flex;

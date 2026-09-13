@@ -1,4 +1,4 @@
-import { splitLines } from '../utils/text.js';
+import { splitLines, parseResponses } from '../utils/text.js';
 
 /* ================= JSON quest export (QuestLines mod format) =================
    The inverse of buildQuestFromJson (src/import/quest-json-import.js) --
@@ -34,24 +34,11 @@ function brToNewlines(raw){
    quest file's Responses.Actions by hand. */
 function parseResponseField(raw){
   if(!raw) return undefined;
-  var responses = [];
-  var current = null;
-  splitLines(raw).forEach(function(line){
-    if(/^—/.test(line)){
-      if(!current) return; // a stray sub-line with no preceding "- " choice; nothing to attach it to
-      var sub = line.replace(/^—\s*/, '');
-      var reqMatch = /^requires:\s*(.*)$/i.exec(sub);
-      if(reqMatch){
-        current.Requirements = current.Requirements || [];
-        current.Requirements.push(reqMatch[1]);
-      } else {
-        current.Actions = current.Actions || [];
-        current.Actions.push(sub);
-      }
-    } else {
-      current = {Text: line.replace(/^-\s*/, '')};
-      responses.push(current);
-    }
+  var responses = parseResponses(raw).map(function(r){
+    var out = {Text: r.text};
+    if(r.requirements.length) out.Requirements = r.requirements;
+    if(r.actions.length) out.Actions = r.actions;
+    return out;
   });
   return responses.length ? responses : undefined;
 }

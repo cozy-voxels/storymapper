@@ -1,9 +1,9 @@
 import { state, pageById, loadStore } from '../state/store.js';
 import {
   elViewport, elModal, elModalBackdrop, elModalName, elModalPageId, elModalFieldsList,
-  elModalSuggestedLinksRow, elModalSuggestedLinks
+  elModalResponsesList, elModalSuggestedLinksRow, elModalSuggestedLinks
 } from '../dom.js';
-import { escapeHtml } from '../utils/text.js';
+import { escapeHtml, parseResponses, serializeResponses, brToText, textToBr } from '../utils/text.js';
 import { autoSizeTextarea } from '../utils/textarea.js';
 import { toWorld } from '../canvas/pan-zoom.js';
 import { renderAll, removePage } from '../render/cards.js';
@@ -13,20 +13,24 @@ import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
 
 /* ================= edit modal ================= */
 
-/* These six always get their own fixed row in the editor, matching the
-   PageData model fields (see ql_data-models.md). Everything else on a
-   page stays freeform under "Other Fields". */
+/* These five always get their own fixed textarea row in the editor,
+   matching the PageData model fields (see ql_data-models.md). Response(s)
+   is also fixed but gets its own structured row-list UI below instead of
+   a single textarea (see responseRow()/RESPONSE_KEYS). Everything else on
+   a page stays freeform under "Other Fields". */
 var FIXED_FIELD_DEFS = [
   {match: ['dialog'], canonical: 'Dialog', el: 'modal-dialog'},
   {match: ['journaltext'], canonical: 'JournalText', el: 'modal-journaltext'},
-  {match: ['response(s)', 'responses'], canonical: 'Response(s)', el: 'modal-responses'},
   {match: ['requirements'], canonical: 'Requirements', el: 'modal-requirements'},
   {match: ['objectives'], canonical: 'Objectives', el: 'modal-objectives'},
   {match: ['loadactions'], canonical: 'LoadActions', el: 'modal-loadactions'}
 ];
 
+var RESPONSE_KEYS = ['response(s)', 'responses'];
+
 function isFixedKey(key){
   var lower = key.toLowerCase();
+  if(RESPONSE_KEYS.indexOf(lower) > -1) return true;
   return FIXED_FIELD_DEFS.some(function(def){ return def.match.indexOf(lower) > -1; });
 }
 
@@ -37,10 +41,11 @@ function isFixedKey(key){
    anywhere on the page. */
 function currentDraftPage(){
   var fields = FIXED_FIELD_DEFS.map(function(def){
-    return {key: def.canonical, value: document.getElementById(def.el).value};
+    return {key: def.canonical, value: textToBr(document.getElementById(def.el).value)};
   });
+  fields.push({key: 'Response(s)', value: serializeResponses(responsesFromRows())});
   elModalFieldsList.querySelectorAll('.field-row').forEach(function(row){
-    fields.push({key: row.querySelector('.key').value, value: row.querySelector('.val').value});
+    fields.push({key: row.querySelector('.key').value, value: textToBr(row.querySelector('.val').value)});
   });
   return {title: elModalName.value, fields: fields};
 }
@@ -87,11 +92,95 @@ function fieldRow(key, value){
     '<textarea class="val" rows="2"></textarea>' +
     '<button type="button" title="Remove field" aria-label="Remove field">&times;</button>';
   var valTa = row.querySelector('.val');
-  valTa.value = value;
+  valTa.value = brToText(value);
   autoSizeTextarea(valTa);
   row.querySelector('button').addEventListener('click', function(){ row.remove(); });
   return row;
 }
+
+/* One Response(s) block: the choice text, plus two optional sub-sections
+   (Requirement(s)/Action(s), each a newline-per-item textarea) toggled on
+   by their own "+ Add" button -- mirrors the real QuestLines Response
+   shape (Text/Requirements/Actions), see parseResponses()/serializeResponses(). */
+function responseRow(resp){
+  resp = resp || {text: '', requirements: [], actions: []};
+  var row = document.createElement('div');
+  row.className = 'response-row';
+  row.innerHTML =
+    '<div class="response-row-head">' +
+      '<textarea class="resp-text" rows="1" placeholder="Response text"></textarea>' +
+      '<button type="button" class="response-remove" title="Remove response" aria-label="Remove response">&times;</button>' +
+    '</div>' +
+    '<div class="response-subs"></div>' +
+    '<div class="response-row-toggles">' +
+      '<button type="button" class="response-add-sub" data-kind="requirements">+ Add Requirement(s)</button>' +
+      '<button type="button" class="response-add-sub" data-kind="actions">+ Add Action(s)</button>' +
+    '</div>';
+
+  var textTa = row.querySelector('.resp-text');
+  textTa.value = brToText(resp.text || '');
+  autoSizeTextarea(textTa);
+  row.querySelector('.response-remove').addEventListener('click', function(){ row.remove(); });
+
+  var subsWrap = row.querySelector('.response-subs');
+  var SUB_LABELS = {requirements: 'Requirement(s)', actions: 'Action(s)'};
+
+  function updateToggleVisibility(){
+    row.querySelectorAll('.response-add-sub').forEach(function(btn){
+      btn.hidden = !!subsWrap.querySelector('.response-sub[data-kind="' + btn.dataset.kind + '"]');
+    });
+  }
+
+  function addSub(kind, items){
+    var sub = document.createElement('div');
+    sub.className = 'response-sub';
+    sub.dataset.kind = kind;
+    sub.innerHTML = '<div class="response-sub-head"><label>' + SUB_LABELS[kind] + '</label>' +
+      '<button type="button" class="response-sub-remove">Remove</button></div>' +
+      '<textarea class="resp-' + kind + '" rows="2"></textarea>';
+    var ta = sub.querySelector('textarea');
+    ta.value = (items || []).map(brToText).join('\n');
+    subsWrap.appendChild(sub);
+    autoSizeTextarea(ta);
+    sub.querySelector('.response-sub-remove').addEventListener('click', function(){
+      sub.remove();
+      updateToggleVisibility();
+    });
+    updateToggleVisibility();
+  }
+
+  row.querySelectorAll('.response-add-sub').forEach(function(btn){
+    btn.addEventListener('click', function(){ addSub(btn.dataset.kind, []); });
+  });
+
+  if((resp.requirements || []).length) addSub('requirements', resp.requirements);
+  if((resp.actions || []).length) addSub('actions', resp.actions);
+  updateToggleVisibility();
+
+  return row;
+}
+
+/* Reads the live #modal-responses-list rows back into
+   {text, requirements[], actions[]} objects for serializeResponses(). */
+function responsesFromRows(){
+  var responses = [];
+  elModalResponsesList.querySelectorAll('.response-row').forEach(function(row){
+    function linesOf(selector){
+      var ta = row.querySelector(selector);
+      return ta ? ta.value.split('\n').map(function(s){ return textToBr(s.trim()); }).filter(Boolean) : [];
+    }
+    responses.push({
+      text: textToBr(row.querySelector('.resp-text').value),
+      requirements: linesOf('.resp-requirements'),
+      actions: linesOf('.resp-actions')
+    });
+  });
+  return responses;
+}
+
+document.getElementById('add-response-btn').addEventListener('click', function(){
+  elModalResponsesList.appendChild(responseRow());
+});
 
 export function openEditor(cardId){
   var page = pageById(cardId);
@@ -106,15 +195,32 @@ export function openEditor(cardId){
       return def.match.indexOf(f.key.toLowerCase()) > -1;
     })[0];
     var ta = document.getElementById(def.el);
-    ta.value = found ? found.value : '';
+    ta.value = brToText(found ? found.value : '');
     autoSizeTextarea(ta);
   });
+
+  var responseField = page.fields.filter(function(f){
+    return RESPONSE_KEYS.indexOf(f.key.toLowerCase()) > -1;
+  })[0];
+  var responses = responseField ? parseResponses(responseField.value) : [];
+  if(!responses.length) responses = [{text: '', requirements: [], actions: []}];
+  elModalResponsesList.innerHTML = '';
+  responses.forEach(function(r){ elModalResponsesList.appendChild(responseRow(r)); });
 
   elModalFieldsList.innerHTML = '';
   page.fields.forEach(function(f){
     if(isFixedKey(f.key)) return;
     elModalFieldsList.appendChild(fieldRow(f.key, f.value));
   });
+
+  // Every textarea just populated above was built (and auto-sized) while
+  // detached from the document -- scrollHeight reads 0/wrong on a detached
+  // node, so the resulting height is always the collapsed min-height no
+  // matter how much text it holds. Re-run auto-size now that they're all
+  // actually in the (now-visible) modal, so long content shows in full
+  // instead of silently clipping with a hidden scrollbar.
+  elModal.querySelectorAll('textarea').forEach(autoSizeTextarea);
+
   initEntityPickers(page, refreshSuggestions);
   refreshSuggestions();
   document.getElementById('modal-title').textContent = 'Edit page';
@@ -162,12 +268,14 @@ document.getElementById('modal-save').addEventListener('click', function(){
 
   var fields = [];
   FIXED_FIELD_DEFS.forEach(function(def){
-    var v = document.getElementById(def.el).value;
+    var v = textToBr(document.getElementById(def.el).value);
     if(v.trim()) fields.push({key: def.canonical, value: v});
   });
+  var responsesValue = serializeResponses(responsesFromRows());
+  if(responsesValue.trim()) fields.push({key: 'Response(s)', value: responsesValue});
   elModalFieldsList.querySelectorAll('.field-row').forEach(function(row){
     var k = row.querySelector('.key').value.trim();
-    var v = row.querySelector('.val').value;
+    var v = textToBr(row.querySelector('.val').value);
     if(k) fields.push({key:k, value:v});
   });
   page.fields = fields;

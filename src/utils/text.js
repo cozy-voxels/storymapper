@@ -19,9 +19,9 @@ export function formatInline(raw){
     t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
     // Card view only: drop the {b}/{i}/{m}/{/}/{#hex} style tags so the
     // text reads clean, same as the card title. Real variables (anything
-    // else in braces) stay in place. The edit modal's textareas read
-    // field.value directly, never through here, so raw tags are still
-    // there to view and edit in full.
+    // else in braces) stay in place. The edit modal's textareas show real
+    // line breaks (via brToText()) but keep everything else raw, so style
+    // tags are still there to view and edit in full.
     t = t.replace(STYLE_TAG_RE, '');
     return t;
   });
@@ -38,8 +38,33 @@ export function formatCardTitle(raw){
   return escapeHtml(raw).replace(/\{[^}]+\}/g, '').trim();
 }
 
+/* Splits on <br> variants AND real line breaks -- hand-typed field values
+   (anything entered directly into a modal textarea, never round-tripped
+   through JSON import's jsonLinesToBr()) often mix literal Enter-key
+   newlines in with <br> tags, and every caller here treats each line as a
+   discrete bullet/requirement/response item, so a raw \n has to split just
+   like <br> does or two real items silently merge into one. */
 export function splitLines(raw){
-  return raw.split(/<br\s*\/?>/i).map(function(l){return l.trim();}).filter(function(l){return l.length;});
+  return raw.split(/<br\s*\/?>|\r\n|\r|\n/i).map(function(l){return l.trim();}).filter(function(l){return l.length;});
+}
+
+/* A <textarea> shows whatever's in its .value literally -- it never
+   interprets HTML, so a field stored with the app's "<br>"-joined
+   convention shows the literal text "<br>" instead of a line break while
+   editing. brToText()/textToBr() are the display-only round trip: convert
+   to real line breaks when populating a textarea, convert back when
+   reading it out for save, so storage/export never changes shape but
+   editing shows clean multi-line text. Unlike splitLines(), these don't
+   trim or drop blank lines -- a blank line matters here (it's how a
+   paragraph break like "<br>  <br>" stays a paragraph break). */
+export function brToText(raw){
+  if(!raw) return '';
+  return raw.replace(/<br\s*\/?>/gi, '\n');
+}
+
+export function textToBr(text){
+  if(!text) return '';
+  return text.replace(/\r\n|\r|\n/g, ' <br> ');
 }
 
 /* Top-level response lines from a page's own Response(s) field (the "— "
@@ -49,10 +74,109 @@ export function splitLines(raw){
 export function responseChoicesForPage(page){
   var field = (page.fields || []).filter(function(f){ return f.key === 'Response(s)'; })[0];
   if(!field) return [];
-  return splitLines(field.value)
-    .filter(function(l){ return !/^—/.test(l); })
-    .map(function(l){ return l.replace(/^-\s*/, '').trim(); })
-    .filter(Boolean);
+  return parseResponses(field.value).map(function(r){ return r.text; }).filter(Boolean);
+}
+
+/* A line starting with a single ASCII hyphen ("- ") always starts a new
+   response -- never an em-dash ("—", U+2014) and never a bare label line
+   like "Action(s):", both of which are sub-content of the response above.
+   A bare line with neither prefix ALSO starts a new response, but only
+   when nothing is open yet: some hand-typed pages skip the dash entirely
+   when there's just one response choice to show, so the very first line
+   of the field is a plain sentence with no leading "- " at all. Once a
+   response is open, a bare line is content for it (or its labeled
+   section), not a second response -- see parseResponses(). */
+function isResponseStart(line, hasCurrent){
+  if(/^-/.test(line)) return true;
+  return !hasCurrent && !/^—/.test(line) && !sectionLabel(line);
+}
+
+/* Recognizes a "Requirement(s):"/"Action(s):" label -- singular or plural,
+   with or without the parens, with or without a trailing colon -- whether
+   it leads its own bare line (hand-typed convention) or trails a "— "
+   sub-line dash. Returns the section it names plus whatever text follows
+   the label on the same line, or null if the line isn't a label at all. */
+var SECTION_LABEL_RE = /^(requirement|action)(s|\(s\))?\s*:?\s*/i;
+function sectionLabel(text){
+  var m = SECTION_LABEL_RE.exec(text);
+  if(!m) return null;
+  return {section: m[1].toLowerCase() === 'requirement' ? 'requirements' : 'actions', rest: text.slice(m[0].length).trim()};
+}
+
+/* Parses a Response(s) field's flat blob into structured
+   {text, requirements[], actions[]} objects. This is the real QuestLines
+   Response shape (Text/Requirements/Actions), flattened into one string
+   for storage in page.fields -- see serializeResponses() for the inverse.
+
+   Real hand-typed data (as opposed to serializeResponses()'s own clean
+   "- text <br> — requires: X <br> — action" output) is looser than that
+   one convention in two ways: (1) a page with only one response choice
+   sometimes skips the leading "- " entirely, since there's nothing to
+   enumerate -- see isResponseStart(); (2) a "Requirement(s):"/"Action(s):"
+   label can lead a bare line of its own, with the actual items following
+   on their own (possibly "— "-prefixed, possibly bare) lines below it
+   until the next response or label -- so a section, once labeled, stays
+   active for whatever un-labeled lines follow. Only the narrower
+   "— requires: X" form (no active section yet) falls back to the
+   original per-line sniff,
+   for round-tripping serializeResponses()'s own machine-generated output. */
+export function parseResponses(raw){
+  if(!raw) return [];
+  var responses = [];
+  var current = null;
+  var currentSection = null;
+  splitLines(raw).forEach(function(line){
+    if(isResponseStart(line, !!current)){
+      current = {text: line.replace(/^[-—]\s*/, ''), requirements: [], actions: []};
+      responses.push(current);
+      currentSection = null;
+      return;
+    }
+    if(!current) return; // a stray sub-line with no preceding "- " choice; nothing to attach it to
+    var content = line.replace(/^—\s*/, '');
+    var label = sectionLabel(content);
+    if(label){
+      currentSection = label.section;
+      if(label.rest) current[currentSection].push(label.rest);
+      return;
+    }
+    if(currentSection){
+      current[currentSection].push(content);
+      return;
+    }
+    var reqMatch = /^requires:\s*(.*)$/i.exec(content);
+    if(reqMatch) current.requirements.push(reqMatch[1]);
+    else current.actions.push(content);
+  });
+  return responses;
+}
+
+/* Inverse of parseResponses(): flattens structured response objects back
+   into the "- text <br> — requires: X <br> — action" blob stored in
+   page.fields. Drops any response with no text and no requirements/actions. */
+export function serializeResponses(responses){
+  var lines = [];
+  (responses || []).forEach(function(r){
+    var text = (r.text || '').trim();
+    var reqs = (r.requirements || []).filter(function(x){ return x.trim(); });
+    var actions = (r.actions || []).filter(function(x){ return x.trim(); });
+    if(!text && !reqs.length && !actions.length) return;
+    lines.push('- ' + text);
+    reqs.forEach(function(rq){ lines.push('— requires: ' + rq); });
+    actions.forEach(function(a){ lines.push('— ' + a); });
+  });
+  return lines.join(' <br> ');
+}
+
+/* Normalizes any <br>/<br/>/<BR> variant (regardless of surrounding
+   whitespace) to the canonical ' <br> ' token -- the same spacing
+   convention JSON import produces via jsonLinesToBr(). Markdown table cells
+   can't contain real newlines, so a hand-authored line break is always a
+   literal <br> tag typed into the cell; this keeps that tag readable as a
+   real line break to splitLines/parseResponses/renderBulletField alike. */
+export function normalizeBr(raw){
+  if(!raw) return raw;
+  return raw.replace(/\s*<br\s*\/?>\s*/gi, ' <br> ');
 }
 
 export function renderBulletField(raw, tone){
@@ -74,6 +198,33 @@ export function renderBulletField(raw, tone){
     }
   });
   if(openSub) html += '</ul>';
+  html += '</ul>';
+  return html;
+}
+
+/* Card display for a Response(s) field: one top-level bullet per response
+   choice, with a labeled "Requires:"/"Actions:" sub-list only when that
+   response actually has one -- mirrors the real QuestLines Response shape
+   (Text/Requirements/Actions) instead of the generic dash/em-dash bullet
+   nesting renderBulletField produces for other fields. */
+export function renderResponses(responses){
+  if(!responses || !responses.length) return '';
+  var html = '<ul class="bullet-list tone-response">';
+  responses.forEach(function(r){
+    html += '<li>' + formatInline(r.text) + '</li>';
+    if(r.requirements.length || r.actions.length){
+      html += '<ul class="bullet-sub">';
+      if(r.requirements.length){
+        html += '<li class="label-line">Requires:</li>';
+        r.requirements.forEach(function(rq){ html += '<li>' + formatInline(rq) + '</li>'; });
+      }
+      if(r.actions.length){
+        html += '<li class="label-line">Actions:</li>';
+        r.actions.forEach(function(a){ html += '<li>' + formatInline(a) + '</li>'; });
+      }
+      html += '</ul>';
+    }
+  });
   html += '</ul>';
   return html;
 }
@@ -118,6 +269,16 @@ export function classifyNoteLines(raw){
    results, linked-item lists, the Story-side linked-items panel). */
 export function compareNames(a, b){
   return String(a || '').localeCompare(String(b || ''), undefined, {sensitivity: 'base'});
+}
+
+/* Turns a display name into a lowercase_snake_case filename stem, for
+   export filenames/foldernames that should read as the thing's name
+   rather than its internal id (see exportQuest/exportQuestline in
+   src/export/export-actions.js). */
+export function slugify(name){
+  return (name || '').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'untitled';
 }
 
 /* Reduces a raw field value to plain, matchable text: <br> tags become

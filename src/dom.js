@@ -19,6 +19,7 @@ export var elModalBackdrop = document.getElementById('modal-backdrop');
 export var elModalName = document.getElementById('modal-name');
 export var elModalPageId = document.getElementById('modal-pageid');
 export var elModalFieldsList = document.getElementById('modal-fields-list');
+export var elModalResponsesList = document.getElementById('modal-responses-list');
 export var elModalSuggestedLinksRow = document.getElementById('modal-suggested-links-row');
 export var elModalSuggestedLinks = document.getElementById('modal-suggested-links');
 

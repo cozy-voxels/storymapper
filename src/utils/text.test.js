@@ -12,6 +12,12 @@ import {
   expandNoteFields,
   compareNames,
   plainTextForMatching,
+  parseResponses,
+  serializeResponses,
+  renderResponses,
+  normalizeBr,
+  brToText,
+  textToBr,
 } from './text.js';
 
 describe('escapeHtml', () => {
@@ -61,6 +67,10 @@ describe('formatCardTitle', () => {
 describe('splitLines', () => {
   it('splits on <br> variants, trims, and drops empties', () => {
     expect(splitLines('a <br> b<br/> <br/> c ')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('also splits on real line breaks, not just <br>', () => {
+    expect(splitLines('a\nb\r\nc <br> d')).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 
@@ -157,6 +167,132 @@ describe('expandNoteFields', () => {
   it('leaves fields alone when there is no Note(s)/Notes field', () => {
     const fields = [{ key: 'Dialog', value: 'Hello' }];
     expect(expandNoteFields(fields)).toEqual(fields);
+  });
+});
+
+describe('parseResponses', () => {
+  it('splits into responses, bucketing — requires: into requirements and other — lines into actions', () => {
+    const raw = '- Color me intrigued. <br> — requires: itemOwned:token <br> — Starts meet_the_mercs quest <br> - Maybe later.';
+    expect(parseResponses(raw)).toEqual([
+      { text: 'Color me intrigued.', requirements: ['itemOwned:token'], actions: ['Starts meet_the_mercs quest'] },
+      { text: 'Maybe later.', requirements: [], actions: [] },
+    ]);
+  });
+
+  it('drops a stray — sub-line with no preceding response', () => {
+    expect(parseResponses('— orphaned')).toEqual([]);
+  });
+
+  it('returns an empty array for falsy input', () => {
+    expect(parseResponses('')).toEqual([]);
+    expect(parseResponses(null)).toEqual([]);
+  });
+
+  it('treats a leading line with no dash at all as the single response, when a page only has one choice', () => {
+    // Real fixture, from data/storymapper-export-2026-09-13.json's
+    // edme_default page -- with only one response to show, the author
+    // skipped the "- " entirely, which previously made the whole response
+    // invisible (no line matched, so parseResponses returned []).
+    const raw = "You're rather odd, you know.<br> Action(s): <br> — chat:Edme will have more to share soon.";
+    expect(parseResponses(raw)).toEqual([
+      { text: "You're rather odd, you know.", requirements: [], actions: ['chat:Edme will have more to share soon.'] },
+    ]);
+  });
+
+  it('still drops a stray — sub-line or bare label at the very start, with nothing to attach it to', () => {
+    expect(parseResponses('Action(s): foo')).toEqual([]);
+  });
+
+  it('handles hand-typed data: real newlines between responses, and a bare "Action(s):"/"Requirement(s):" label line whose items follow on their own (possibly un-prefixed) lines', () => {
+    // Real fixture, from data/storymapper-export-2026-09-13.json's
+    // broomseller_event_hub page -- mixes <br> and literal \n as response
+    // separators, and labels a section with its own bare line rather than
+    // repeating "— requires:"/"— action" on every item.
+    const raw =
+      '- What\'s the difference between the brooms? <br> Action(s): <br> — page:broomseller_event_broom_types\n' +
+      '- How do I craft a **starweave broom**? <br> — Requirement(s): Does NOT have requisite tufts and/or sticks <br> — Action(s): page:broomseller_event_crafting\n' +
+      '- I want to craft or buy a broom <br> Action(s): <br> page:broomseller_event_brooms\n' +
+      '- Nothing else, thanks.';
+    expect(parseResponses(raw)).toEqual([
+      { text: "What's the difference between the brooms?", requirements: [], actions: ['page:broomseller_event_broom_types'] },
+      { text: 'How do I craft a **starweave broom**?', requirements: ['Does NOT have requisite tufts and/or sticks'], actions: ['page:broomseller_event_crafting'] },
+      { text: 'I want to craft or buy a broom', requirements: [], actions: ['page:broomseller_event_brooms'] },
+      { text: 'Nothing else, thanks.', requirements: [], actions: [] },
+    ]);
+  });
+});
+
+describe('serializeResponses', () => {
+  it('is the inverse of parseResponses', () => {
+    const responses = [
+      { text: 'Color me intrigued.', requirements: ['itemOwned:token'], actions: ['Starts meet_the_mercs quest'] },
+      { text: 'Maybe later.', requirements: [], actions: [] },
+    ];
+    const raw = serializeResponses(responses);
+    expect(raw).toBe('- Color me intrigued. <br> — requires: itemOwned:token <br> — Starts meet_the_mercs quest <br> - Maybe later.');
+    expect(parseResponses(raw)).toEqual(responses);
+  });
+
+  it('drops a response with no text and no requirements/actions', () => {
+    expect(serializeResponses([{ text: '', requirements: [], actions: [] }])).toBe('');
+  });
+
+  it('trims blank requirement/action lines out', () => {
+    const raw = serializeResponses([{ text: 'Go', requirements: ['', '  '], actions: [''] }]);
+    expect(raw).toBe('- Go');
+  });
+});
+
+describe('renderResponses', () => {
+  it('renders a labeled Requires/Actions sub-list only when present', () => {
+    const html = renderResponses([
+      { text: 'Choice A', requirements: ['req1'], actions: ['act1'] },
+      { text: 'Choice B', requirements: [], actions: [] },
+    ]);
+    expect(html).toBe(
+      '<ul class="bullet-list tone-response">' +
+        '<li>Choice A</li>' +
+        '<ul class="bullet-sub">' +
+          '<li class="label-line">Requires:</li><li>req1</li>' +
+          '<li class="label-line">Actions:</li><li>act1</li>' +
+        '</ul>' +
+        '<li>Choice B</li>' +
+        '</ul>'
+    );
+  });
+
+  it('returns an empty string for no responses', () => {
+    expect(renderResponses([])).toBe('');
+  });
+});
+
+describe('normalizeBr', () => {
+  it('normalizes any <br> variant/spacing to the canonical spaced token', () => {
+    expect(normalizeBr('a<br>b<br/>c<BR />d <br>  e')).toBe('a <br> b <br> c <br> d <br> e');
+  });
+
+  it('returns falsy input unchanged', () => {
+    expect(normalizeBr('')).toBe('');
+    expect(normalizeBr(undefined)).toBe(undefined);
+  });
+});
+
+describe('brToText / textToBr', () => {
+  it('converts <br> to real line breaks for display, keeping blank lines', () => {
+    expect(brToText('First line. <br>  <br> Second line.')).toBe('First line. \n  \n Second line.');
+  });
+
+  it('converts real line breaks back to <br>, and re-parses the same as the original', () => {
+    const stored = 'First line. <br>  <br> Second line.';
+    const roundTripped = textToBr(brToText(stored));
+    expect(splitLines(roundTripped)).toEqual(splitLines(stored));
+  });
+
+  it('returns an empty string for falsy input', () => {
+    expect(brToText('')).toBe('');
+    expect(brToText(null)).toBe('');
+    expect(textToBr('')).toBe('');
+    expect(textToBr(null)).toBe('');
   });
 });
 

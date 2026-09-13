@@ -1,6 +1,6 @@
 import { state, PRIMARY_KEYS, pageById } from '../state/store.js';
 import { elCardsLayer } from '../dom.js';
-import { escapeHtml, formatInline, formatCardTitle, splitLines, renderBulletField, looksLikeBulletField, renderSimpleList } from '../utils/text.js';
+import { escapeHtml, formatInline, formatCardTitle, splitLines, renderBulletField, looksLikeBulletField, renderSimpleList, parseResponses, renderResponses } from '../utils/text.js';
 import { renderWires } from './wires.js';
 import { renderSections } from './sections.js';
 import { openEditor } from '../editor/modal.js';
@@ -16,7 +16,7 @@ export function fieldHtml(field){
   }
   if(keyLower === 'response(s)' || keyLower === 'responses'){
     return '<div class="field-block"><div class="field-label">Response(s)</div>' +
-      renderBulletField(field.value, 'response') + '</div>';
+      renderResponses(parseResponses(field.value)) + '</div>';
   }
   if(keyLower === 'journaltext'){
     return '<div class="field-block"><div class="field-label">Journal</div>' +

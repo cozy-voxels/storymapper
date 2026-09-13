@@ -1,4 +1,5 @@
 import { state } from '../state/store.js';
+import { serializeResponses } from '../utils/text.js';
 
 /* ================= JSON quest import (QuestLines mod format) =================
    Imports the real quest JSON files under QuestLines/quests (including
@@ -56,13 +57,10 @@ export function buildQuestFromJson(qj){
     if(pd.Dialog) fields.push({key: 'Dialog', value: jsonLinesToBr(pd.Dialog)});
     if(pd.JournalText) fields.push({key: 'JournalText', value: jsonLinesToBr(pd.JournalText)});
     if(pd.Responses && pd.Responses.length){
-      var lines = [];
-      pd.Responses.forEach(function(r){
-        lines.push('- ' + (r.Text || ''));
-        (r.Requirements || []).forEach(function(rq){ lines.push('— requires: ' + rq); });
-        (r.Actions || []).forEach(function(a){ lines.push('— ' + a); });
+      var responses = pd.Responses.map(function(r){
+        return {text: r.Text || '', requirements: r.Requirements || [], actions: r.Actions || []};
       });
-      fields.push({key: 'Response(s)', value: lines.join(' <br> ')});
+      fields.push({key: 'Response(s)', value: serializeResponses(responses)});
     }
     if(pd.Requirements && pd.Requirements.length) fields.push({key: 'Requirements', value: pd.Requirements.join(' <br> ')});
     if(pd.Objectives && pd.Objectives.length) fields.push({key: 'Objectives', value: pd.Objectives.join(' <br> ')});
