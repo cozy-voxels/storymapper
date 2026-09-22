@@ -1,4 +1,4 @@
-import { state, loadStore } from '../state/store.js';
+import { state, loadStore, saveStore } from '../state/store.js';
 import { elTrashBackdrop, elTrashList, elViewport } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
 import { toWorld } from '../canvas/pan-zoom.js';
@@ -80,6 +80,47 @@ export function renderTrashList(){
   html += '</div>';
 
   elTrashList.innerHTML = html;
+
+  var isEmpty = !state.trash.length && !store.trashedQuests.length && !store.trashedQuestlines.length;
+  document.getElementById('trash-delete-all').disabled = isEmpty;
+}
+
+// Same arm-then-confirm pattern as confirmDangerClick in library-view.js:
+// window.confirm() is silently suppressed in this sandboxed context, so
+// destructive actions instead arm the button on the first click and only
+// act on a second click on that same still-armed button.
+var armedDeleteAllBtn = null;
+var armedDeleteAllTimer = null;
+function resetArmedDeleteAll(){
+  if(armedDeleteAllBtn){
+    armedDeleteAllBtn.textContent = 'Delete All';
+    armedDeleteAllBtn.classList.remove('armed');
+  }
+  armedDeleteAllBtn = null;
+  if(armedDeleteAllTimer){ clearTimeout(armedDeleteAllTimer); armedDeleteAllTimer = null; }
+}
+function confirmDeleteAllClick(btn){
+  if(armedDeleteAllBtn === btn){
+    resetArmedDeleteAll();
+    return true;
+  }
+  resetArmedDeleteAll();
+  armedDeleteAllBtn = btn;
+  btn.textContent = 'Confirm?';
+  btn.classList.add('armed');
+  armedDeleteAllTimer = setTimeout(resetArmedDeleteAll, 4000);
+  return false;
+}
+
+function deleteAllTrash(){
+  state.trash.length = 0;
+  var store = loadStore();
+  store.trashedQuests.length = 0;
+  store.trashedQuestlines.length = 0;
+  saveStore(store);
+  renderTrashList();
+  if(state.view === 'library') renderLibrary();
+  flashStatus('Trash emptied', 2000);
 }
 
 export function restorePage(trashIndex){
@@ -101,6 +142,9 @@ document.getElementById('trash-btn').addEventListener('click', function(){
 });
 document.getElementById('trash-close').addEventListener('click', function(){
   elTrashBackdrop.classList.remove('open');
+});
+document.getElementById('trash-delete-all').addEventListener('click', function(e){
+  if(confirmDeleteAllClick(e.currentTarget)) deleteAllTrash();
 });
 elTrashBackdrop.addEventListener('mousedown', function(e){
   if(e.target === elTrashBackdrop) elTrashBackdrop.classList.remove('open');
