@@ -248,9 +248,6 @@ document.getElementById('add-field-btn').addEventListener('click', function(){
 });
 
 document.getElementById('modal-cancel').addEventListener('click', closeModal);
-elModalBackdrop.addEventListener('mousedown', function(e){
-  if(e.target === elModalBackdrop) closeModal();
-});
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape' && elModalBackdrop.classList.contains('open')) closeModal();
 });
