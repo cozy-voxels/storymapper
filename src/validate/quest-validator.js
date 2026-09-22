@@ -42,6 +42,7 @@ import { ValidationReport } from './validation-report.js';
 import { validateRequirement, validateRequirementList } from './requirement-validator.js';
 import { validateAction, validateActionList } from './action-validator.js';
 import { serializeQuestToJson } from '../export/quest-json-export.js';
+import { slugify } from '../utils/text.js';
 
 function requiredText(value, path, label, report){
   if(!value || !String(value).trim()) report.warning(path, '`' + label + '` is empty.');
@@ -152,7 +153,8 @@ export function validateQuest(quest, allQuests){
   var report = new ValidationReport();
   var qlJson = serializeQuestToJson(quest);
   var questId = quest.id;
-  var prefix = 'quest[' + questId + ']';
+  var questSlug = slugify(quest.name);
+  var prefix = 'quest[' + questSlug + ']';
 
   requiredText(qlJson.Title, prefix + '.Title', 'Title', report);
   validateRequirementList(qlJson.Requirements, prefix + '.Requirements', report);
@@ -170,7 +172,7 @@ export function validateQuest(quest, allQuests){
 
     var summaries = Object.keys(seen).map(function(pid){
       var page = qlJson.PageData[pid];
-      return page ? validatePage(questId, pid, page, pageIds, report) : null;
+      return page ? validatePage(questSlug, pid, page, pageIds, report) : null;
     }).filter(Boolean);
     var anyTimedActive = summaries.some(function(s){ return s.hasTimedActive; });
     var anyTimedExpired = summaries.some(function(s){ return s.hasTimedExpired; });

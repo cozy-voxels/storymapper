@@ -87,3 +87,7 @@
   margin-top:2px;
   overflow-wrap:anywhere;
 }
+.validate-goto-btn{
+  flex:0 0 auto;
+  margin-top:1px;
+}
