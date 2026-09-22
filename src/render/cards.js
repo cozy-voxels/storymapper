@@ -72,6 +72,7 @@ export function buildCardEl(page){
   html += '<div class="card-body">';
   html += '  <div class="card-actions">';
   html += '    <button class="icon-btn edit-btn" title="Edit page" aria-label="Edit page">&#9998;</button>';
+  html += '    <button class="icon-btn copy-btn" title="Copy page" aria-label="Copy page">&#10697;</button>';
   html += '  </div>';
   primary.forEach(function(f){ html += fieldHtml(f); });
   if(extra.length){
@@ -118,11 +119,37 @@ export function removePage(id){
   renderAll();
 }
 
-/* ---- card action buttons (edit / delete / expand) ---- */
+/* Copies a single page in place: new page id off the same global counter
+   as everything else, pageId suffixed "-copy" so it doesn't collide with
+   the original, and all other data (fields, linked NPCs/locations, quest/
+   questline attribution) carried over -- but never connections, since a
+   copy isn't wired into the diagram the way the original is. */
+export function duplicatePage(id){
+  var page = pageById(id);
+  if(!page) return;
+  var copy = Object.assign({}, page, {
+    id: 'p' + (state.nextPageId++),
+    pageId: page.pageId + '-copy',
+    fields: (page.fields || []).map(function(f){ return Object.assign({}, f); }),
+    linkedNpcIds: (page.linkedNpcIds || []).slice(),
+    linkedLocationIds: (page.linkedLocationIds || []).slice(),
+    x: page.x + 30,
+    y: page.y + 30
+  });
+  state.pages.push(copy);
+  renderAll();
+}
+
+/* ---- card action buttons (edit / copy / delete / expand) ---- */
 elCardsLayer.addEventListener('click', function(e){
   var editBtn = e.target.closest('.edit-btn');
   if(editBtn){
     openEditor(editBtn.closest('.card').dataset.id);
+    return;
+  }
+  var copyBtn = e.target.closest('.copy-btn');
+  if(copyBtn){
+    duplicatePage(copyBtn.closest('.card').dataset.id);
     return;
   }
   var toggle = e.target.closest('.expand-toggle');
