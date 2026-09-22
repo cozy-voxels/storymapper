@@ -232,7 +232,7 @@ export function openNewCardEditor(){
                     elViewport.getBoundingClientRect().top + elViewport.clientHeight/2);
   var page = {
     id: 'p' + (state.nextPageId++),
-    title: 'New NPC',
+    title: '',
     pageId: 'new_page_id',
     fields: [{key:'Dialog', value:''}, {key:'Response(s)', value:'- '}],
     linkedNpcIds: [], linkedLocationIds: [],
