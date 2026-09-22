@@ -32,6 +32,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
+    color-scheme:dark;
     --bg:#0d1120;
     --bg-dot:#161b30;
     --surface:#161c30;
@@ -65,6 +66,7 @@
   }
 }
 :root[data-theme="dark"]{
+  color-scheme:dark;
   --bg:#0d1120;
   --bg-dot:#161b30;
   --surface:#161c30;
