@@ -3,7 +3,7 @@ import { elCardsLayer } from '../dom.js';
 import { escapeHtml, formatInline, formatCardTitle, splitLines, renderBulletField, looksLikeBulletField, renderSimpleList, parseResponses, renderResponses } from '../utils/text.js';
 import { renderWires } from './wires.js';
 import { renderSections } from './sections.js';
-import { openEditor } from '../editor/modal.js';
+import { READ_ONLY } from '../mode.js';
 
 /* ================= rendering ================= */
 export var CARD_W = 308;
@@ -65,15 +65,21 @@ export function buildCardEl(page){
   html += '    <div class="card-name">' + formatCardTitle(page.title) + '</div>';
   html += '    <div class="card-pageid">' + escapeHtml(page.pageId) + '</div>';
   html += '  </div>';
-  html += '  <div class="handle handle-top" data-side="top" tabindex="0" title="Drag to connect"></div>';
-  html += '  <div class="handle handle-left" data-side="left" tabindex="0" title="Drag to connect"></div>';
-  html += '  <div class="handle handle-right" data-side="right" tabindex="0" title="Drag to connect"></div>';
+  // The read-only viewer can't connect, edit, or copy pages, so it gets
+  // neither the connection handles nor the edit/copy buttons.
+  if(!READ_ONLY){
+    html += '  <div class="handle handle-top" data-side="top" tabindex="0" title="Drag to connect"></div>';
+    html += '  <div class="handle handle-left" data-side="left" tabindex="0" title="Drag to connect"></div>';
+    html += '  <div class="handle handle-right" data-side="right" tabindex="0" title="Drag to connect"></div>';
+  }
   html += '</div>';
   html += '<div class="card-body">';
-  html += '  <div class="card-actions">';
-  html += '    <button class="icon-btn edit-btn" title="Edit page" aria-label="Edit page">&#9998;</button>';
-  html += '    <button class="icon-btn copy-btn" title="Copy page" aria-label="Copy page">&#10697;</button>';
-  html += '  </div>';
+  if(!READ_ONLY){
+    html += '  <div class="card-actions">';
+    html += '    <button class="icon-btn edit-btn" title="Edit page" aria-label="Edit page">&#9998;</button>';
+    html += '    <button class="icon-btn copy-btn" title="Copy page" aria-label="Copy page">&#10697;</button>';
+    html += '  </div>';
+  }
   primary.forEach(function(f){ html += fieldHtml(f); });
   if(extra.length){
     html += '<button class="expand-toggle" type="button">More <span class="chev">&#9662;</span></button>';
@@ -140,18 +146,11 @@ export function duplicatePage(id){
   renderAll();
 }
 
-/* ---- card action buttons (edit / copy / delete / expand) ---- */
+/* ---- card "More"/"Less" expand toggle ----
+   The edit/copy buttons' handler lives in editor/modal.js instead, so the
+   read-only viewer (which never loads the editor) can import this module
+   without pulling the editor modal in along with it. */
 elCardsLayer.addEventListener('click', function(e){
-  var editBtn = e.target.closest('.edit-btn');
-  if(editBtn){
-    openEditor(editBtn.closest('.card').dataset.id);
-    return;
-  }
-  var copyBtn = e.target.closest('.copy-btn');
-  if(copyBtn){
-    duplicatePage(copyBtn.closest('.card').dataset.id);
-    return;
-  }
   var toggle = e.target.closest('.expand-toggle');
   if(toggle){
     var extra = toggle.parentNode.querySelector('.card-extra');

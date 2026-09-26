@@ -1,7 +1,9 @@
-STORYMAPPER_CONTEXT.md
-data/*.json
-bin/seed-welcome-snapshot.js
-
-node_modules/
+.claude/
+.vscode/
+data/
 dist/
+dist-view/
+node_modules/
+view/data.json
+bin/seed-welcome-snapshot.js
 .vite/

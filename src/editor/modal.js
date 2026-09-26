@@ -1,12 +1,12 @@
 import { state, pageById, loadStore } from '../state/store.js';
 import {
-  elViewport, elModal, elModalBackdrop, elModalName, elModalPageId, elModalFieldsList,
+  elCardsLayer, elViewport, elModal, elModalBackdrop, elModalName, elModalPageId, elModalFieldsList,
   elModalResponsesList, elModalSuggestedLinksRow, elModalSuggestedLinks
 } from '../dom.js';
 import { escapeHtml, parseResponses, serializeResponses, brToText, textToBr } from '../utils/text.js';
 import { autoSizeTextarea } from '../utils/textarea.js';
 import { toWorld } from '../canvas/pan-zoom.js';
-import { renderAll, removePage } from '../render/cards.js';
+import { renderAll, removePage, duplicatePage } from '../render/cards.js';
 import { initEntityPickers, getEntityPickerIds, addEntityLink } from '../ui/entity-picker.js';
 import { suggestLinks } from '../import/link-suggestions.js';
 import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
@@ -290,3 +290,16 @@ document.getElementById('modal-delete').addEventListener('click', function(){
 });
 
 document.getElementById('add-card-btn').addEventListener('click', openNewCardEditor);
+
+/* ---- card action buttons (edit / copy) ---- */
+elCardsLayer.addEventListener('click', function(e){
+  var editBtn = e.target.closest('.edit-btn');
+  if(editBtn){
+    openEditor(editBtn.closest('.card').dataset.id);
+    return;
+  }
+  var copyBtn = e.target.closest('.copy-btn');
+  if(copyBtn){
+    duplicatePage(copyBtn.closest('.card').dataset.id);
+  }
+});

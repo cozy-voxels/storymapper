@@ -14,6 +14,8 @@ import { persistCurrent, cancelAutosave, flashSaved } from '../state/persist.js'
 import { updateTopbarForView } from '../views.js';
 import { questsLinkingToWorldItem } from '../state/links.js';
 import { switchToQuest } from '../state/quest-switch.js';
+import { notifyViewChange } from '../state/view-events.js';
+import { READ_ONLY } from '../mode.js';
 
 /* ================= world view (Factions / NPCs / Locations) =================
    A simple directory + item-detail pair of views, built the same way the
@@ -225,6 +227,7 @@ export function showWorldView(){
   elWorldDirectory.hidden = false;
   updateTopbarForView();
   renderWorldDirectory();
+  notifyViewChange();
 }
 
 function worldItemById(category, id){
@@ -244,6 +247,7 @@ export function showWorldItem(category, id){
   elWorldDetail.hidden = false;
   updateTopbarForView();
   renderWorldDetail();
+  notifyViewChange();
 }
 
 /* Renders the current world-item detail view. Always rebuilds both the
@@ -324,6 +328,9 @@ function renderWorldDetail(edit){
     }
   }
   elWorldDetailFields.innerHTML = fieldsHtml;
+
+  // The read-only viewer has no edit form (or edit markup) at all.
+  if(READ_ONLY) return;
 
   var editHtml = '';
   schema.fields.forEach(function(f){
@@ -416,21 +423,21 @@ function clearLocation(){
   if(searchEl) searchEl.focus();
   showLocationResults();
 }
-elWorldDetailEditFields.addEventListener('input', function(e){
+if(elWorldDetailEditFields) elWorldDetailEditFields.addEventListener('input', function(e){
   if(e.target.tagName === 'TEXTAREA') autoSizeTextarea(e.target);
   if(e.target.id === 'world-edit-location-search') showLocationResults();
 });
-elWorldDetailEditFields.addEventListener('focus', function(e){
+if(elWorldDetailEditFields) elWorldDetailEditFields.addEventListener('focus', function(e){
   if(e.target.id === 'world-edit-location-search') showLocationResults();
 }, true); // focus doesn't bubble -- capture phase is required for delegation
-elWorldDetailEditFields.addEventListener('focusout', function(e){
+if(elWorldDetailEditFields) elWorldDetailEditFields.addEventListener('focusout', function(e){
   if(e.target.id !== 'world-edit-location-search') return;
   // Long enough for a result/clear button's own mousedown handler (below)
   // to run and act first; that handler doesn't re-focus the input, so
   // there's no risk of this then clobbering a freshly-opened dropdown.
   setTimeout(hideLocationResults, 150);
 });
-elWorldDetailEditFields.addEventListener('mousedown', function(e){
+if(elWorldDetailEditFields) elWorldDetailEditFields.addEventListener('mousedown', function(e){
   var result = e.target.closest('.location-result-item');
   if(result){
     e.preventDefault();
@@ -442,14 +449,14 @@ elWorldDetailEditFields.addEventListener('mousedown', function(e){
     clearLocation();
   }
 });
-elWorldDetailEditFields.addEventListener('keydown', function(e){
+if(elWorldDetailEditFields) elWorldDetailEditFields.addEventListener('keydown', function(e){
   if(e.key === 'Escape' && e.target.id === 'world-edit-location-search') hideLocationResults();
 });
 
-elWorldDetailEditBtn.addEventListener('click', function(){ setWorldDetailEditing(true); });
-elWorldDetailCancelBtn.addEventListener('click', function(){ renderWorldDetail(false); });
+if(elWorldDetailEditBtn) elWorldDetailEditBtn.addEventListener('click', function(){ setWorldDetailEditing(true); });
+if(elWorldDetailCancelBtn) elWorldDetailCancelBtn.addEventListener('click', function(){ renderWorldDetail(false); });
 
-elWorldDetailSaveBtn.addEventListener('click', function(){
+if(elWorldDetailSaveBtn) elWorldDetailSaveBtn.addEventListener('click', function(){
   var category = state.worldCategory, id = state.worldItemId;
   var schema = WORLD_SCHEMAS[category];
   var store = loadStore();
@@ -484,7 +491,7 @@ function resetWorldDeleteArm(){
   if(worldDeleteArmTimer){ clearTimeout(worldDeleteArmTimer); worldDeleteArmTimer = null; }
   if(elWorldDetailDeleteBtn) elWorldDetailDeleteBtn.textContent = 'Delete';
 }
-elWorldDetailDeleteBtn.addEventListener('click', function(){
+if(elWorldDetailDeleteBtn) elWorldDetailDeleteBtn.addEventListener('click', function(){
   var category = state.worldCategory, id = state.worldItemId;
   if(!worldDeleteArmed){
     worldDeleteArmed = true;
@@ -514,7 +521,7 @@ elWorldDetailCrumbCategory.addEventListener('click', function(){
 });
 
 document.getElementById('world-directory').addEventListener('click', function(e){
-  var addBtn = e.target.closest('[data-role="add-world-item"]');
+  var addBtn = !READ_ONLY && e.target.closest('[data-role="add-world-item"]');
   if(addBtn){
     var category = addBtn.dataset.category;
     var schema = WORLD_SCHEMAS[category];

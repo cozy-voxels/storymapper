@@ -206,21 +206,32 @@
   max-width:150px;
 }
 .quest-row select.quest-status{max-width:98px;font-weight:700;}
-.quest-row select.quest-status[data-status="WIP"]{
+.quest-row .quest-status[data-status="WIP"]{
   color:var(--status-blue);
   background:var(--status-blue-soft);
   border-color:var(--status-blue);
 }
-.quest-row select.quest-status[data-status="QA"]{
+.quest-row .quest-status[data-status="QA"]{
   color:var(--lilac);
   background:var(--lilac-soft);
   border-color:var(--lilac);
 }
-.quest-row select.quest-status[data-status="Released"]{
+.quest-row .quest-status[data-status="Released"]{
   color:var(--status-green);
   background:var(--status-green-soft);
   border-color:var(--status-green);
 }
+/* Read-only viewer: status is a static badge (same colors as the select
+   above) and quest names aren't click-to-rename. */
+.quest-row .quest-status-badge{
+  flex:0 0 auto;
+  font-size:13px;
+  font-weight:700;
+  border:1px solid var(--border-strong);
+  border-radius:5px;
+  padding:3px 8px;
+}
+[data-mode="view"] .quest-name{cursor:default;}
 .quest-row .btn{flex:0 0 auto;padding:5px 10px;font-size:14px;}
 .quest-row .btn.icon-btn{padding:0;}
 

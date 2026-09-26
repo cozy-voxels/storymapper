@@ -1,11 +1,13 @@
 import { state, loadStore, saveStore } from './store.js';
 import { elQuestPill, elSaveStatus } from '../dom.js';
+import { READ_ONLY } from '../mode.js';
 
 /* Writes state.pages/connections/trash back into a single quest's
    record in the store. Used both for plain single-quest mode and,
    tagged per source quest, when splitting a merged questline view
    back apart on save. */
 export function persistCurrentQuest(){
+  if(READ_ONLY) return;
   var store = loadStore();
   var existingQuest = store.quests[state.questId];
   store.quests[state.questId] = {
@@ -42,6 +44,7 @@ export function persistCurrentQuest(){
    different member quests) and are routed to the questline's own
    record instead of any single quest's. */
 export function persistCurrentQuestline(){
+  if(READ_ONLY) return;
   var store = loadStore();
   var crossConns = state.connections.filter(function(c){ return c._cross; }).map(function(c){
     var out = {id: c.id, from: c.from, to: c.to, fromSide: c.fromSide, toSide: c.toSide};
@@ -132,12 +135,15 @@ export function persistCurrentQuestline(){
 }
 
 export function persistCurrent(){
+  if(READ_ONLY) return;
   if(state.activeQuestlineId) persistCurrentQuestline();
   else persistCurrentQuest();
 }
 
 var autosaveTimer = null;
 export function scheduleAutosave(){
+  // The read-only viewer never saves anything (see mode.js).
+  if(READ_ONLY) return;
   if(!state.questId && !state.activeQuestlineId) return;
   if(autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(function(){

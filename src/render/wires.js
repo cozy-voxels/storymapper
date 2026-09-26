@@ -4,6 +4,7 @@ import { responseChoicesForPage } from '../utils/text.js';
 import { scheduleAutosave } from '../state/persist.js';
 import { cardEl, CARD_W } from './cards.js';
 import { toClient } from '../canvas/pan-zoom.js';
+import { READ_ONLY } from '../mode.js';
 
 var BORDER_W = 1;
 
@@ -96,11 +97,15 @@ export function renderWires(){
     hit.setAttribute('class', 'wire-hit');
     hit.dataset.conn = conn.id;
     hit.style.pointerEvents = 'stroke';
-    hit.addEventListener('click', function(e){
-      e.stopPropagation();
-      state.selectedConn = state.selectedConn === conn.id ? null : conn.id;
-      renderWires();
-    });
+    // Read-only: arrows can't be selected (selecting is only a step toward
+    // deleting or relabeling one), but the hit path stays for its tooltip.
+    if(!READ_ONLY){
+      hit.addEventListener('click', function(e){
+        e.stopPropagation();
+        state.selectedConn = state.selectedConn === conn.id ? null : conn.id;
+        renderWires();
+      });
+    }
     // A same-quest arrow built from a response carries that response's
     // text; a cross-quest arrow carries the raw requirement string (e.g.
     // "questCompleted:welcome_herald") that produced it. Either way, the

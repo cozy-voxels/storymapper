@@ -1,4 +1,4 @@
-import { loadStore, state } from '../state/store.js';
+import { loadStore, state, publishableStore } from '../state/store.js';
 import { elExportAllBtn } from '../dom.js';
 import { persistCurrent } from '../state/persist.js';
 import { questToJsonString } from './quest-json-export.js';
@@ -41,6 +41,14 @@ export function exportAllData(){
   var store = loadStore();
   var stamp = new Date().toISOString().slice(0, 10);
   downloadTextFile('storymapper-export-' + stamp + '.json', JSON.stringify(store, null, 2));
+}
+
+/* Same raw dump as exportAllData, minus trash (see publishableStore), saved
+   as data.json: the one file the read-only viewer (view/index.html) loads,
+   ready to upload right next to it. */
+export function exportPublishData(){
+  if(state.questId || state.activeQuestlineId) persistCurrent();
+  downloadTextFile('data.json', JSON.stringify(publishableStore(loadStore()), null, 2));
 }
 
 export function exportQuest(questId){
@@ -96,3 +104,5 @@ export async function exportQuestline(qlId){
 }
 
 if(elExportAllBtn) elExportAllBtn.addEventListener('click', exportAllData);
+var elExportPublishBtn = document.getElementById('export-publish-btn');
+if(elExportPublishBtn) elExportPublishBtn.addEventListener('click', exportPublishData);

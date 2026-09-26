@@ -4,6 +4,7 @@ import { escapeHtml } from '../utils/text.js';
 import { flashStatus } from '../state/persist.js';
 import { switchToQuest, switchToQuestline } from '../state/quest-switch.js';
 import { exportQuest, exportQuestline } from '../export/export-actions.js';
+import { READ_ONLY } from '../mode.js';
 
 /* ================= library view ================= */
 
@@ -34,7 +35,20 @@ function rowMenuHtml(items){
     '</div>';
 }
 
+/* The read-only viewer's version of a quest row: no rename, status as a
+   static badge, and only Open plus a direct Export (no ⋮ menu, since
+   everything else in it -- move, duplicate, delete -- is an edit). */
+function readOnlyQuestRowHtml(quest){
+  return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
+      '<span class="quest-name">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
+      (quest.status ? '<span class="quest-status quest-status-badge" data-status="' + escapeHtml(quest.status) + '">' + escapeHtml(quest.status) + '</span>' : '') +
+      '<button class="btn" type="button" data-role="open-quest">Open</button>' +
+      '<button class="btn" type="button" data-role="export-quest" title="Download as a QuestLines quest .json file">Export</button>' +
+    '</div>';
+}
+
 function questRowHtml(store, quest){
+  if(READ_ONLY) return readOnlyQuestRowHtml(quest);
   var menu = '<label class="dropdown-item dropdown-item-select">Move to questline' +
       '<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
     '</label>' +
@@ -165,7 +179,9 @@ export function renderLibrary(){
 
   var questlineIds = Object.keys(store.questlines);
   if(!questlineIds.length){
-    elQuestlineGroups.innerHTML = '<div class="library-empty">No questlines yet. Create one, then assign quests to it below.</div>';
+    elQuestlineGroups.innerHTML = READ_ONLY
+      ? '<div class="library-empty">No questlines.</div>'
+      : '<div class="library-empty">No questlines yet. Create one, then assign quests to it below.</div>';
   } else {
     var qlHtml = '';
     questlineIds.forEach(function(qlId){
@@ -177,12 +193,14 @@ export function renderLibrary(){
       qlHtml += '<div class="questline-block' + (ql.collapsed ? ' collapsed' : '') + '" data-questline-id="' + qlId + '">' +
         '<div class="questline-head" data-role="head">' +
           '<span class="chev">&#9662;</span>' +
-          '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>' +
-          '<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : ' disabled title="Add a quest to this questline first"') + '>Open questline</button>' +
-          rowMenuHtml(qlMenu) +
+          (READ_ONLY
+            ? '<span class="questline-name">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>'
+            : '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>') +
+          '<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : (READ_ONLY ? ' disabled' : ' disabled title="Add a quest to this questline first"')) + '>Open questline</button>' +
+          (READ_ONLY ? '' : rowMenuHtml(qlMenu)) +
         '</div>' +
         '<div class="quest-list">' +
-          (members.length ? members.map(function(q){ return questRowHtml(store, q); }).join('') : '<div class="library-empty">No quests assigned yet.</div>') +
+          (members.length ? members.map(function(q){ return questRowHtml(store, q); }).join('') : '<div class="library-empty">' + (READ_ONLY ? 'No quests.' : 'No quests assigned yet.') + '</div>') +
         '</div>' +
       '</div>';
     });
@@ -218,7 +236,9 @@ function startInlineRename(labelEl, onSave){
   });
 }
 
-document.getElementById('new-questline-btn').addEventListener('click', function(){
+// The create buttons below don't exist in the read-only viewer.
+var elNewQuestlineBtn = document.getElementById('new-questline-btn');
+if(elNewQuestlineBtn) elNewQuestlineBtn.addEventListener('click', function(){
   var store = loadStore();
   var id = genId();
   store.questlines[id] = {id: id, name: 'New Questline'};
@@ -230,7 +250,8 @@ document.getElementById('new-questline-btn').addEventListener('click', function(
 // quests are added to it), a brand-new quest is immediately useful to
 // start filling in -- so this opens straight onto its canvas, same as
 // finishing a file import, rather than leaving it sitting in the library.
-document.getElementById('new-quest-btn').addEventListener('click', function(){
+var elNewQuestBtn = document.getElementById('new-quest-btn');
+if(elNewQuestBtn) elNewQuestBtn.addEventListener('click', function(){
   var store = loadStore();
   var id = genId();
   store.quests[id] = {
@@ -279,7 +300,7 @@ function handleRowMenuToggle(e){
 
 elQuestlineGroups.addEventListener('click', function(e){
   if(handleRowMenuToggle(e)) return;
-  var nameEl = e.target.closest('.questline-name');
+  var nameEl = !READ_ONLY && e.target.closest('.questline-name');
   if(nameEl){
     // Capture the questline id up front, before startInlineRename swaps
     // nameEl out of the DOM for an <input> — once detached, nameEl has no
@@ -372,7 +393,7 @@ function confirmDangerClick(btn){
 }
 
 function handleQuestRowClick(e){
-  var nameEl = e.target.closest('.quest-name');
+  var nameEl = !READ_ONLY && e.target.closest('.quest-name');
   var row = e.target.closest('.quest-row');
   if(!row) return;
   var questId = row.dataset.questId;

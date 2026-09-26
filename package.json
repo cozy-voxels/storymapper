@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:view": "vite build --config vite.view.config.js",
     "preview": "vite preview",
+    "preview:view": "vite preview --config vite.view.config.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

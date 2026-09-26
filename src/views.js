@@ -13,6 +13,7 @@ import { layoutPages } from './import/markdown-import.js';
 import { fitViewToPages } from './state/quest-switch.js';
 import { applyTransform } from './canvas/pan-zoom.js';
 import { renderAll } from './render/cards.js';
+import { notifyViewChange } from './state/view-events.js';
 
 /* ================= view switching ================= */
 
@@ -24,23 +25,26 @@ function closeOptionsMenu(){
   elOptionsMenu.hidden = true;
   elOptionsBtn.setAttribute('aria-expanded', 'false');
 }
-elOptionsBtn.addEventListener('click', function(e){
-  e.stopPropagation();
-  var willOpen = elOptionsMenu.hidden;
-  elOptionsMenu.hidden = !willOpen;
-  elOptionsBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-});
-// Any item click both runs that item's own handler (attached elsewhere,
-// unchanged) and closes the menu afterward.
-elOptionsMenu.addEventListener('click', function(e){
-  if(e.target.closest('.dropdown-item')) closeOptionsMenu();
-});
-document.addEventListener('click', function(e){
-  if(!elOptionsMenu.hidden && !e.target.closest('#options-dropdown')) closeOptionsMenu();
-});
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && !elOptionsMenu.hidden) closeOptionsMenu();
-});
+// The read-only viewer has no Options menu at all.
+if(elOptionsBtn && elOptionsMenu){
+  elOptionsBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var willOpen = elOptionsMenu.hidden;
+    elOptionsMenu.hidden = !willOpen;
+    elOptionsBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  });
+  // Any item click both runs that item's own handler (attached elsewhere,
+  // unchanged) and closes the menu afterward.
+  elOptionsMenu.addEventListener('click', function(e){
+    if(e.target.closest('.dropdown-item')) closeOptionsMenu();
+  });
+  document.addEventListener('click', function(e){
+    if(!elOptionsMenu.hidden && !e.target.closest('#options-dropdown')) closeOptionsMenu();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !elOptionsMenu.hidden) closeOptionsMenu();
+  });
+}
 
 /* "+ Page" only makes sense when a single quest is open — inside a
    whole-questline view it would be ambiguous which quest a new page
@@ -92,6 +96,7 @@ export function showLibraryView(){
   elLibraryView.classList.add('open');
   updateTopbarForView();
   renderLibrary();
+  notifyViewChange();
 }
 
 if(elNavLibraryPill) elNavLibraryPill.addEventListener('click', showLibraryView);

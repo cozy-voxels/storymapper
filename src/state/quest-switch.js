@@ -12,6 +12,7 @@ import { renderAll, CARD_W } from '../render/cards.js';
 import { closeConnLabelChooser } from '../render/wires.js';
 import { showCanvasView } from '../views.js';
 import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
+import { notifyViewChange } from './view-events.js';
 
 function sequentialConnections(pages){
   var conns = [];
@@ -189,6 +190,7 @@ export function switchToQuest(id){
   store.activeQuestId = id;
   store.activeQuestlineId = null;
   saveStore(store);
+  notifyViewChange();
 }
 
 /* Opens an entire questline: merges every member quest's pages,
@@ -253,5 +255,6 @@ export function switchToQuestline(qlId){
   store.activeQuestId = null;
   store.activeQuestlineId = qlId;
   saveStore(store);
+  notifyViewChange();
   return true;
 }

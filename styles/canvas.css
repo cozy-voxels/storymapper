@@ -476,3 +476,7 @@ ul.bullet-sub > li::before{
   border-radius:5px;
   opacity:1;
 }
+
+/* Read-only viewer: arrows can't be selected (card headers and section
+   boxes keep their grab cursor, since dragging them pans the canvas). */
+[data-mode="view"] svg#wires path.wire-hit{cursor:default;}

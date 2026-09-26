@@ -169,7 +169,20 @@ export function ensureStoreShape(store){
   return store;
 }
 
+/* The read-only viewer's data: the raw text of its published data.json,
+   set once at boot via setPublishedStore(). While set, loadStore() reads
+   from it instead of localStorage -- re-parsed on every call, so callers
+   get a fresh copy each time exactly as they would from localStorage
+   (switchToQuestline, for one, tags and shifts the pages it loads) -- and
+   saveStore() never writes anything. */
+var publishedRaw = null;
+
+export function setPublishedStore(raw){
+  publishedRaw = raw;
+}
+
 export function loadStore(){
+  if(publishedRaw !== null) return ensureStoreShape(JSON.parse(publishedRaw));
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -189,6 +202,7 @@ export function loadStore(){
    can tell the user their data didn't actually save, instead of it just
    quietly not being there next time they look. */
 export function saveStore(store){
+  if(publishedRaw !== null) return true;
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     return true;
@@ -196,6 +210,22 @@ export function saveStore(store){
     if(window.console && console.error) console.error('StoryMapper: could not save to localStorage', e);
     return false;
   }
+}
+
+/* A copy of the store fit for publishing alongside the read-only viewer:
+   anything in the published data.json is publicly downloadable, so every
+   kind of trash (soft-deleted pages, quests, and questlines) is left out,
+   along with which quest/questline happened to be open in the editor. */
+export function publishableStore(store){
+  var copy = JSON.parse(JSON.stringify(store));
+  Object.keys(copy.quests || {}).forEach(function(qid){
+    copy.quests[qid].trash = [];
+  });
+  copy.trashedQuests = [];
+  copy.trashedQuestlines = [];
+  copy.activeQuestId = null;
+  copy.activeQuestlineId = null;
+  return copy;
 }
 
 export function pageById(id){

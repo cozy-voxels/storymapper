@@ -1,31 +1,24 @@
 import { state, pageById } from '../state/store.js';
 import { elViewport, elMarqueeBox, elCardsLayer } from '../dom.js';
-import { toWorld, applyTransform } from './pan-zoom.js';
+import { toWorld, isPanExcludedTarget } from './pan-zoom.js';
 import { cardEl, CARD_W, renderAll } from '../render/cards.js';
 import { renderWires, removeConnection, closeConnLabelChooser, showConnLabelChooser } from '../render/wires.js';
 import { renderSections } from '../render/sections.js';
 import { connecting, startConnecting, stopConnecting, updateTempWire, nearestSide } from './connect.js';
 import { responseChoicesForPage } from '../utils/text.js';
 
-/* ---- panning on empty canvas ---- */
-var panDrag = null;
+/* ---- empty-canvas mousedown (editor only) ----
+   Plain panning itself lives in pan-zoom.js (shared with the read-only
+   viewer); this handles the editor-only parts of the same gesture. */
 elViewport.addEventListener('mousedown', function(e){
-  // .wire-del covers both the x delete button and the pencil edit button
-  // on a selected wire. Without this exclusion, a mousedown on either one
-  // bubbled up here first (before the button's own 'click' handler could
-  // fire), deselected the connection, and re-rendered the wires layer —
-  // which deletes the button element itself. The click event then had
-  // nothing left to fire on, so the buttons looked dead despite being
-  // visible and having working click listeners.
-  if(e.target.closest('.card') || e.target.closest('.handle') || e.target.closest('#zoom-ctl') || e.target.closest('.quest-section') || e.target.closest('.wire-del')) return;
+  if(isPanExcludedTarget(e.target)) return;
   // Shift-drag on empty canvas: draw a lasso instead of panning, to select
   // several cards for a temporary group move (see startMarquee below).
+  // pan-zoom.js's own mousedown skips shift-drags for exactly this reason.
   if(e.shiftKey){
     startMarquee(e.clientX, e.clientY);
     return;
   }
-  panDrag = {startX: e.clientX, startY: e.clientY, panX: state.pan.x, panY: state.pan.y};
-  elViewport.classList.add('panning');
   if(state.selectedConn){ state.selectedConn = null; renderWires(); }
   // A plain click on empty canvas drops the temp group too, same as
   // clicking away from anything else selected on the canvas.
@@ -152,12 +145,6 @@ document.addEventListener('mousemove', function(e){
     if(state.activeQuestlineId) renderSections();
     return;
   }
-  if(panDrag){
-    state.pan.x = panDrag.panX + (e.clientX - panDrag.startX);
-    state.pan.y = panDrag.panY + (e.clientY - panDrag.startY);
-    applyTransform();
-    return;
-  }
   if(cardDrag){
     var page = pageById(cardDrag.id);
     var wp = toWorld(e.clientX, e.clientY);
@@ -208,10 +195,6 @@ document.addEventListener('mouseup', function(e){
       if(gEl) gEl.classList.remove('dragging');
     });
     groupDrag = null;
-  }
-  if(panDrag){
-    panDrag = null;
-    elViewport.classList.remove('panning');
   }
   if(cardDrag){
     var el = cardEl(cardDrag.id);
