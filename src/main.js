@@ -28,6 +28,7 @@ import './library/library-view.js';
 import './world/world-view.js';
 import './canvas/linked-items-panel.js';
 import './import/file-import.js';
+import './import/store-import.js';
 import './validate/validate-ui.js';
 import './theme.js';
 

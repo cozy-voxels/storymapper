@@ -42,6 +42,8 @@
 							title="Restore a deleted page, quest, or questline">Restore&hellip;</button>
 						<button type="button" class="dropdown-item" id="export-all-btn"
 							title="Export all StoryMapper data">Export all data&hellip;</button>
+						<button type="button" class="dropdown-item dropdown-item-danger" id="import-store-btn"
+							title="Replace ALL StoryMapper data in this browser with an &ldquo;Export all data&rdquo; file">Import Storymapper JSON&hellip;</button>
 						<button type="button" class="dropdown-item" id="export-publish-btn"
 							title="Export data.json for the read-only viewer (leaves out anything in the trash)">Export for publishing&hellip;</button>
 					</div>
@@ -206,6 +208,7 @@
 
 		<input type="file" id="file-input" accept=".md,.txt,.json">
 		<input type="file" id="folder-input" webkitdirectory directory multiple>
+		<input type="file" id="store-file-input" accept=".json">
 	</div>
 
 	<div id="modal-backdrop">

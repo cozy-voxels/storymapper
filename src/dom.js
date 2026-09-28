@@ -47,6 +47,7 @@ export var elRelayoutBtn = document.getElementById('relayout-btn');
 export var elOptionsBtn = document.getElementById('options-btn');
 export var elOptionsMenu = document.getElementById('options-menu');
 export var elExportAllBtn = document.getElementById('export-all-btn');
+export var elImportStoreBtn = document.getElementById('import-store-btn');
 
 export var elNavLibraryPill = document.getElementById('nav-library-pill');
 export var elNavWorldPill = document.getElementById('nav-world-pill');
@@ -77,3 +78,4 @@ export var elWorldDetailCrumbName = document.getElementById('world-detail-crumb-
 
 export var elFileInput = document.getElementById('file-input');
 export var elFolderInput = document.getElementById('folder-input');
+export var elStoreFileInput = document.getElementById('store-file-input');

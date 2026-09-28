@@ -6,6 +6,7 @@ import { switchToQuest, loadFromMarkdown } from '../state/quest-switch.js';
 import { showCanvasView } from '../views.js';
 import { persistCurrent, flashStatus } from '../state/persist.js';
 import { renderLibrary } from '../library/library-view.js';
+import { isStorymapperExport } from './storymapper-export.js';
 
 /* ================= file import ================= */
 // Importing a .md draft always creates a brand-new standalone quest, never
@@ -107,6 +108,12 @@ elFileInput.addEventListener('change', function(){
       var qj;
       try{ qj = JSON.parse(String(reader.result)); }
       catch(e){ flashStatus('Could not parse "' + file.name + '" as JSON', 4000); return; }
+      // A full "Export all data" dump isn't a quest -- restoring it replaces
+      // everything, so point at the one control that confirms that first.
+      if(isStorymapperExport(qj)){
+        flashStatus('"' + file.name + '" is a full StoryMapper export — use Options › Import Storymapper JSON… to restore it', 6000);
+        return;
+      }
       var questId = file.name.replace(/\.json$/i, '');
       var questName = qj.Title || questId;
       var built = buildQuestFromJson(qj);

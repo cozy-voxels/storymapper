@@ -178,7 +178,8 @@ h1,h2,h3{text-wrap:balance;}
    it still gets a distinct hover treatment — but its resting text color
    matches every other item now, rather than starting out muted. */
 .dropdown-item.dropdown-item-danger:hover{background:var(--crimson-soft);color:var(--crimson-ink);}
-#file-input, #folder-input{display:none;}
+.dropdown-item.armed, .dropdown-item.armed:hover{background:var(--crimson-soft);color:var(--crimson-ink);}
+#file-input, #folder-input, #store-file-input{display:none;}
 
 .theme-toggle{
   position:relative;
