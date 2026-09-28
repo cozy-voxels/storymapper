@@ -2,7 +2,7 @@ import { state } from './state/store.js';
 import {
   elLibraryView, elWorldView, elCanvasArea, elQuestPill,
   elAddCardBtn, elClearCrossBtn, elRelayoutBtn, elValidateQuestBtn, elLinkedItemsToggle,
-  elOptionsBtn, elOptionsMenu, elNavLibraryPill, elNavWorldPill
+  elOptionsBtn, elOptionsMenu, elNavLibraryPill, elNavWorldPill, elReorderQuestsBtn
 } from './dom.js';
 import { cancelAutosave, persistCurrent, persistCurrentQuest, persistCurrentQuestline, flashStatus } from './state/persist.js';
 import { renderLibrary } from './library/library-view.js';
@@ -59,6 +59,7 @@ export function updateTopbarForView(){
   if(elValidateQuestBtn) elValidateQuestBtn.style.display = singleQuest ? '' : 'none';
   if(elLinkedItemsToggle) elLinkedItemsToggle.style.display = (singleQuest || wholeQuestline) ? '' : 'none';
   if(elClearCrossBtn) elClearCrossBtn.style.display = wholeQuestline ? '' : 'none';
+  if(elReorderQuestsBtn) elReorderQuestsBtn.style.display = state.view === 'library' ? '' : 'none';
   if(elNavLibraryPill) elNavLibraryPill.classList.toggle('active', state.view === 'library');
   if(elNavWorldPill) elNavWorldPill.classList.toggle('active', state.view === 'world' || state.view === 'world-item');
   // the current-quest subheader only makes sense while something is open

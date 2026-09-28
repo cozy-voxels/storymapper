@@ -1,16 +1,17 @@
-import { loadStore, saveStore, genId } from '../state/store.js';
-import { elQuestlineGroups, elStandaloneQuests } from '../dom.js';
+import { state, loadStore, saveStore, genId, orderedQuestlineIds, orderedQuestlineMemberIds } from '../state/store.js';
+import { elLibraryView, elQuestlineGroups, elStandaloneQuests, elReorderQuestsBtn, elReorderBar, elFinishReorderBtn } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
 import { flashStatus } from '../state/persist.js';
 import { switchToQuest, switchToQuestline } from '../state/quest-switch.js';
 import { exportQuest, exportQuestline } from '../export/export-actions.js';
 import { READ_ONLY } from '../mode.js';
+import { onViewChange } from '../state/view-events.js';
 
 /* ================= library view ================= */
 
 function questlineOptionsHtml(store, selectedId){
   var html = '<option value="">— Standalone —</option>';
-  Object.keys(store.questlines).forEach(function(qlId){
+  orderedQuestlineIds(store).forEach(function(qlId){
     html += '<option value="' + qlId + '"' + (qlId === selectedId ? ' selected' : '') + '>' +
       escapeHtml(store.questlines[qlId].name) + '</option>';
   });
@@ -47,6 +48,13 @@ function readOnlyQuestRowHtml(quest){
     '</div>';
 }
 
+/* "Reorder quests" mode (see startReordering below): while on, questline
+   heads and questline member rows render draggable with a grip, and every
+   other library action is hidden (CSS, via #library-view.reordering) and
+   ignored (the click handlers below bail out early). */
+var reordering = false;
+var DRAG_GRIP_HTML = '<span class="drag-grip" aria-hidden="true">&#10303;</span>';
+
 function questRowHtml(store, quest){
   if(READ_ONLY) return readOnlyQuestRowHtml(quest);
   var menu = '<label class="dropdown-item dropdown-item-select">Move to questline' +
@@ -55,7 +63,9 @@ function questRowHtml(store, quest){
     '<button type="button" class="dropdown-item" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
     '<button type="button" class="dropdown-item" data-role="duplicate-quest" title="Duplicate quest">Duplicate</button>' +
     '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-quest" title="Delete quest">Delete</button>';
-  return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
+  var draggable = reordering && quest.questlineId;
+  return '<div class="quest-row" data-quest-id="' + quest.id + '"' + (draggable ? ' draggable="true"' : '') + '>' +
+      (draggable ? DRAG_GRIP_HTML : '') +
       '<span class="quest-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
       '<select class="quest-status" data-role="status" data-status="' + escapeHtml(quest.status || '') + '" title="Status">' + questStatusOptionsHtml(quest.status) + '</select>' +
       '<button class="btn" type="button" data-role="open-quest">Open</button>' +
@@ -177,7 +187,7 @@ export function renderLibrary(){
   var store = loadStore();
   var questIds = Object.keys(store.quests);
 
-  var questlineIds = Object.keys(store.questlines);
+  var questlineIds = orderedQuestlineIds(store);
   if(!questlineIds.length){
     elQuestlineGroups.innerHTML = READ_ONLY
       ? '<div class="library-empty">No questlines.</div>'
@@ -186,12 +196,12 @@ export function renderLibrary(){
     var qlHtml = '';
     questlineIds.forEach(function(qlId){
       var ql = store.questlines[qlId];
-      var members = questIds.filter(function(qid){ return store.quests[qid].questlineId === qlId; })
-        .map(function(qid){ return store.quests[qid]; });
+      var members = orderedQuestlineMemberIds(store, qlId).map(function(qid){ return store.quests[qid]; });
       var qlMenu = '<button type="button" class="dropdown-item" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
         '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">Delete questline</button>';
       qlHtml += '<div class="questline-block' + (ql.collapsed ? ' collapsed' : '') + '" data-questline-id="' + qlId + '">' +
-        '<div class="questline-head" data-role="head">' +
+        '<div class="questline-head" data-role="head"' + (reordering ? ' draggable="true"' : '') + '>' +
+          (reordering ? DRAG_GRIP_HTML : '') +
           '<span class="chev">&#9662;</span>' +
           (READ_ONLY
             ? '<span class="questline-name">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>'
@@ -299,6 +309,13 @@ function handleRowMenuToggle(e){
 }
 
 elQuestlineGroups.addEventListener('click', function(e){
+  if(reordering){
+    // Collapsing stays available so long questlines can be folded
+    // out of the way while dragging questlines around.
+    var reorderHead = e.target.closest('.questline-head');
+    if(reorderHead) toggleQuestlineCollapsed(reorderHead.closest('.questline-block'));
+    return;
+  }
   if(handleRowMenuToggle(e)) return;
   var nameEl = !READ_ONLY && e.target.closest('.questline-name');
   if(nameEl){
@@ -342,20 +359,24 @@ elQuestlineGroups.addEventListener('click', function(e){
   }
   var head = e.target.closest('.questline-head');
   if(head && !e.target.closest('button')){
-    var block = head.closest('.questline-block');
-    var isCollapsed = block.classList.toggle('collapsed');
-    var store2 = loadStore();
-    var qlId2 = block.dataset.questlineId;
-    if(store2.questlines[qlId2]){
-      store2.questlines[qlId2].collapsed = isCollapsed;
-      saveStore(store2);
-    }
+    toggleQuestlineCollapsed(head.closest('.questline-block'));
     return;
   }
   handleQuestRowClick(e);
 });
 
+function toggleQuestlineCollapsed(block){
+  var isCollapsed = block.classList.toggle('collapsed');
+  var store = loadStore();
+  var qlId = block.dataset.questlineId;
+  if(store.questlines[qlId]){
+    store.questlines[qlId].collapsed = isCollapsed;
+    saveStore(store);
+  }
+}
+
 elStandaloneQuests.addEventListener('click', function(e){
+  if(reordering) return;
   if(handleRowMenuToggle(e)) return;
   handleQuestRowClick(e);
 });
@@ -456,3 +477,90 @@ function handleStatusChange(e){
 }
 elQuestlineGroups.addEventListener('change', handleStatusChange);
 elStandaloneQuests.addEventListener('change', handleStatusChange);
+
+/* ================= reorder mode =================
+   Drag-and-drop moves the DOM rows live; nothing is written until
+   "Finished reordering", which reads the final DOM order back into each
+   questline's and member quest's `order` (see orderedQuestlineIds in
+   store.js). Quests can only be dropped within their own questline's
+   list -- moving a quest to another questline is still "Move to
+   questline" in its row menu. */
+function startReordering(){
+  if(READ_ONLY || reordering) return;
+  reordering = true;
+  closeAllRowMenus();
+  elLibraryView.classList.add('reordering');
+  if(elReorderBar) elReorderBar.hidden = false;
+  renderLibrary();
+}
+
+function finishReordering(){
+  if(!reordering) return;
+  var store = loadStore();
+  elQuestlineGroups.querySelectorAll('.questline-block').forEach(function(block, i){
+    var ql = store.questlines[block.dataset.questlineId];
+    if(ql) ql.order = i;
+    block.querySelectorAll('.quest-row').forEach(function(row, j){
+      var quest = store.quests[row.dataset.questId];
+      if(quest) quest.order = j;
+    });
+  });
+  saveStore(store);
+  reordering = false;
+  elLibraryView.classList.remove('reordering');
+  if(elReorderBar) elReorderBar.hidden = true;
+  renderLibrary();
+  flashStatus('Quest order saved', 2000);
+}
+
+if(elReorderQuestsBtn) elReorderQuestsBtn.addEventListener('click', startReordering);
+if(elFinishReorderBtn) elFinishReorderBtn.addEventListener('click', finishReordering);
+
+// Leaving the library mid-reorder (e.g. the World pill) keeps the
+// arrangement rather than silently dropping it.
+onViewChange(function(){
+  if(reordering && state.view !== 'library') finishReordering();
+});
+
+var dragEl = null;
+var dragKind = null;   // 'questline' | 'quest'
+
+elQuestlineGroups.addEventListener('dragstart', function(e){
+  if(!reordering) return;
+  var row = e.target.closest('.quest-row[draggable="true"]');
+  var head = !row && e.target.closest('.questline-head[draggable="true"]');
+  if(!row && !head) return;
+  dragKind = row ? 'quest' : 'questline';
+  dragEl = row || head.closest('.questline-block');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', '');
+  dragEl.classList.add('dragging');
+});
+
+elQuestlineGroups.addEventListener('dragover', function(e){
+  if(!dragEl) return;
+  var target;
+  if(dragKind === 'questline'){
+    target = e.target.closest('.questline-block');
+  } else {
+    target = e.target.closest('.quest-row');
+    if(target && target.parentNode !== dragEl.parentNode) target = null;
+  }
+  if(!target) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if(target === dragEl) return;
+  var rect = target.getBoundingClientRect();
+  var before = e.clientY < rect.top + rect.height / 2;
+  target.parentNode.insertBefore(dragEl, before ? target : target.nextSibling);
+});
+
+elQuestlineGroups.addEventListener('drop', function(e){
+  if(dragEl) e.preventDefault();
+});
+
+elQuestlineGroups.addEventListener('dragend', function(){
+  if(dragEl) dragEl.classList.remove('dragging');
+  dragEl = null;
+  dragKind = null;
+});

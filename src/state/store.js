@@ -228,6 +228,32 @@ export function publishableStore(store){
   return copy;
 }
 
+/* Questlines, and quests within a questline, display in a user-set
+   order (the "Reorder quests" option in the library): each record's
+   numeric `order`, falling back to creation (object-key) order for any
+   record that has never been reordered -- those sort after every ordered
+   one, so a new or imported questline/quest lands at the end. */
+function sortByOrder(ids, records){
+  return ids.map(function(id, i){ return {id: id, i: i}; })
+    .sort(function(a, b){
+      var oa = typeof records[a.id].order === 'number' ? records[a.id].order : Infinity;
+      var ob = typeof records[b.id].order === 'number' ? records[b.id].order : Infinity;
+      if(oa !== ob) return oa < ob ? -1 : 1;
+      return a.i - b.i;
+    })
+    .map(function(x){ return x.id; });
+}
+
+export function orderedQuestlineIds(store){
+  return sortByOrder(Object.keys(store.questlines || {}), store.questlines || {});
+}
+
+export function orderedQuestlineMemberIds(store, qlId){
+  var quests = store.quests || {};
+  var memberIds = Object.keys(quests).filter(function(qid){ return quests[qid].questlineId === qlId; });
+  return sortByOrder(memberIds, quests);
+}
+
 export function pageById(id){
   return state.pages.filter(function(p){return p.id === id;})[0];
 }

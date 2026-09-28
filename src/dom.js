@@ -48,6 +48,9 @@ export var elOptionsBtn = document.getElementById('options-btn');
 export var elOptionsMenu = document.getElementById('options-menu');
 export var elExportAllBtn = document.getElementById('export-all-btn');
 export var elImportStoreBtn = document.getElementById('import-store-btn');
+export var elReorderQuestsBtn = document.getElementById('reorder-quests-btn');
+export var elReorderBar = document.getElementById('reorder-bar');
+export var elFinishReorderBtn = document.getElementById('finish-reorder-btn');
 
 export var elNavLibraryPill = document.getElementById('nav-library-pill');
 export var elNavWorldPill = document.getElementById('nav-world-pill');

@@ -3,7 +3,7 @@
    structure (they're used by boot, by file import, and by the library
    alike, and are neither pure markdown/JSON data transforms nor pure
    store CRUD) — see the refactor report for that judgment call. */
-import { state, loadStore, saveStore, genId } from './store.js';
+import { state, loadStore, saveStore, genId, orderedQuestlineMemberIds } from './store.js';
 import { elViewport } from '../dom.js';
 import { parseMarkdownTables, tablesToPages, layoutPages } from '../import/markdown-import.js';
 import { persistCurrent, updateQuestPill } from './persist.js';
@@ -208,9 +208,7 @@ export function switchToQuestline(qlId){
   var store = loadStore();
   var ql = store.questlines[qlId];
   if(!ql) return false;
-  var memberIds = Object.keys(store.quests).filter(function(qid){
-    return store.quests[qid].questlineId === qlId;
-  });
+  var memberIds = orderedQuestlineMemberIds(store, qlId);
   if(!memberIds.length) return false;
   state.nextPageId = store.nextPageId;
   state.nextConnId = store.nextConnId;

@@ -1,4 +1,4 @@
-import { loadStore, state, publishableStore } from '../state/store.js';
+import { loadStore, state, publishableStore, orderedQuestlineMemberIds } from '../state/store.js';
 import { elExportAllBtn } from '../dom.js';
 import { persistCurrent } from '../state/persist.js';
 import { questToJsonString } from './quest-json-export.js';
@@ -69,7 +69,7 @@ export async function exportQuestline(qlId){
   var store = loadStore();
   var ql = store.questlines[qlId];
   if(!ql) return {ok: false, message: 'Questline not found'};
-  var memberIds = Object.keys(store.quests).filter(function(qid){ return store.quests[qid].questlineId === qlId; });
+  var memberIds = orderedQuestlineMemberIds(store, qlId);
   if(!memberIds.length) return {ok: false, message: 'This questline has no quests to export'};
   if(!window.showDirectoryPicker){
     return {ok: false, message: 'This browser can’t write folders directly (needs Chrome or Edge) — use "Export" on each quest instead'};

@@ -251,3 +251,32 @@
   width:100%;
   max-width:none;
 }
+
+/* ---------- reorder mode ("Options > Reorder quests") ---------- */
+#reorder-bar{
+  position:sticky;
+  top:0;
+  z-index:5;
+  display:flex;
+  justify-content:flex-end;
+  padding:10px 24px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+#reorder-bar[hidden]{display:none;}
+#library-view.reordering .library-section-head .actions,
+#library-view.reordering .row-menu,
+#library-view.reordering [data-role="open-quest"],
+#library-view.reordering [data-role="open-questline"],
+#library-view.reordering .quest-row select.quest-status{display:none;}
+#library-view.reordering .quest-name{cursor:inherit;}
+#library-view.reordering #standalone-quests{opacity:.5;pointer-events:none;}
+#library-view.reordering [draggable="true"]{cursor:grab;user-select:none;}
+.drag-grip{
+  color:var(--ink-faint);
+  font-size:16px;
+  line-height:1;
+  flex:0 0 auto;
+}
+.questline-block.dragging,
+.quest-row.dragging{opacity:.4;}
