@@ -9,41 +9,41 @@ import { onViewChange } from '../state/view-events.js';
 
 /* ================= library view ================= */
 
-function questlineOptionsHtml(store, selectedId){
-  var html = '<option value="">— Standalone —</option>';
-  orderedQuestlineIds(store).forEach(function(qlId){
-    html += '<option value="' + qlId + '"' + (qlId === selectedId ? ' selected' : '') + '>' +
-      escapeHtml(store.questlines[qlId].name) + '</option>';
-  });
-  return html;
+function questlineOptionsHtml(store, selectedId) {
+	var html = '<option value="">— Standalone —</option>';
+	orderedQuestlineIds(store).forEach(function (qlId) {
+		html += '<option value="' + qlId + '"' + (qlId === selectedId ? ' selected' : '') + '>' +
+			escapeHtml(store.questlines[qlId].name) + '</option>';
+	});
+	return html;
 }
 
 var QUEST_STATUSES = ['WIP', 'QA', 'Released'];
-function questStatusOptionsHtml(selected){
-  var html = '<option value=""' + (selected ? '' : ' selected') + '>— Status —</option>';
-  QUEST_STATUSES.forEach(function(s){
-    html += '<option value="' + s + '"' + (s === selected ? ' selected' : '') + '>' + s + '</option>';
-  });
-  return html;
+function questStatusOptionsHtml(selected) {
+	var html = '<option value=""' + (selected ? '' : ' selected') + '>— Status —</option>';
+	QUEST_STATUSES.forEach(function (s) {
+		html += '<option value="' + s + '"' + (s === selected ? ' selected' : '') + '>' + s + '</option>';
+	});
+	return html;
 }
 
-function rowMenuHtml(items){
-  return '<div class="dropdown row-menu">' +
-      '<button class="btn icon-btn" type="button" data-role="menu-toggle" aria-haspopup="true" aria-expanded="false" title="More actions">' +
-        '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>' +
-      '</button>' +
-      '<div class="dropdown-menu" data-role="menu" hidden>' + items + '</div>' +
-    '</div>';
+function rowMenuHtml(items) {
+	return '<div class="dropdown row-menu">' +
+		'<button class="btn icon-btn" type="button" data-role="menu-toggle" aria-haspopup="true" aria-expanded="false" title="More actions">' +
+		'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>' +
+		'</button>' +
+		'<div class="dropdown-menu" data-role="menu" hidden>' + items + '</div>' +
+		'</div>';
 }
 
 /* Read-only viewer quest row: static status badge, Open and Export only. */
-function readOnlyQuestRowHtml(quest){
-  return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
-      '<span class="quest-name">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
-      (quest.status ? '<span class="quest-status quest-status-badge" data-status="' + escapeHtml(quest.status) + '">' + escapeHtml(quest.status) + '</span>' : '') +
-      '<button class="btn" type="button" data-role="open-quest">Open</button>' +
-      '<button class="btn" type="button" data-role="export-quest" title="Download as a QuestLines quest .json file">Export</button>' +
-    '</div>';
+function readOnlyQuestRowHtml(quest) {
+	return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
+		'<span class="quest-name">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
+		(quest.status ? '<span class="quest-status quest-status-badge" data-status="' + escapeHtml(quest.status) + '">' + escapeHtml(quest.status) + '</span>' : '') +
+		'<button class="btn" type="button" data-role="open-quest">Open</button>' +
+		'<button class="btn" type="button" data-role="export-quest" title="Download as a QuestLines quest .json file">Export</button>' +
+		'</div>';
 }
 
 /* While reordering (see startReordering), rows are draggable and all other
@@ -51,308 +51,308 @@ function readOnlyQuestRowHtml(quest){
 var reordering = false;
 var DRAG_GRIP_HTML = '<span class="drag-grip" aria-hidden="true">&#10303;</span>';
 
-function questRowHtml(store, quest){
-  if(READ_ONLY) return readOnlyQuestRowHtml(quest);
-  var menu = '<label class="dropdown-item dropdown-item-select">Move to questline' +
-      '<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
-    '</label>' +
-    '<button type="button" class="dropdown-item" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
-    '<button type="button" class="dropdown-item" data-role="duplicate-quest" title="Duplicate quest">Duplicate</button>' +
-    '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-quest" title="Delete quest">Delete</button>';
-  var draggable = reordering && quest.questlineId;
-  return '<div class="quest-row" data-quest-id="' + quest.id + '"' + (draggable ? ' draggable="true"' : '') + '>' +
-      (draggable ? DRAG_GRIP_HTML : '') +
-      '<span class="quest-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
-      '<select class="quest-status" data-role="status" data-status="' + escapeHtml(quest.status || '') + '" title="Status">' + questStatusOptionsHtml(quest.status) + '</select>' +
-      '<button class="btn" type="button" data-role="open-quest">Open</button>' +
-      rowMenuHtml(menu) +
-    '</div>';
+function questRowHtml(store, quest) {
+	if (READ_ONLY) return readOnlyQuestRowHtml(quest);
+	var menu = '<label class="dropdown-item dropdown-item-select">Move to questline' +
+		'<select data-role="assign" title="Assign to questline">' + questlineOptionsHtml(store, quest.questlineId) + '</select>' +
+		'</label>' +
+		'<button type="button" class="dropdown-item" data-role="export-quest" title="Download as a real QuestLines quest .json file">Export</button>' +
+		'<button type="button" class="dropdown-item" data-role="duplicate-quest" title="Duplicate quest">Duplicate</button>' +
+		'<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-quest" title="Delete quest">Delete</button>';
+	var draggable = reordering && quest.questlineId;
+	return '<div class="quest-row" data-quest-id="' + quest.id + '"' + (draggable ? ' draggable="true"' : '') + '>' +
+		(draggable ? DRAG_GRIP_HTML : '') +
+		'<span class="quest-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
+		'<select class="quest-status" data-role="status" data-status="' + escapeHtml(quest.status || '') + '" title="Status">' + questStatusOptionsHtml(quest.status) + '</select>' +
+		'<button class="btn" type="button" data-role="open-quest">Open</button>' +
+		rowMenuHtml(menu) +
+		'</div>';
 }
 
 /* Soft delete: moves the quest record to store.trashedQuests. questlineId
    is kept, so a restored quest rejoins its questline if it still exists. */
-function trashQuest(questId){
-  var store = loadStore();
-  var quest = store.quests[questId];
-  if(!quest) return;
-  delete store.quests[questId];
-  store.trashedQuests.push({quest: quest, deletedAt: Date.now()});
-  if(store.activeQuestId === questId) store.activeQuestId = null;
-  saveStore(store);
+function trashQuest(questId) {
+	var store = loadStore();
+	var quest = store.quests[questId];
+	if (!quest) return;
+	delete store.quests[questId];
+	store.trashedQuests.push({ quest: quest, deletedAt: Date.now() });
+	if (store.activeQuestId === questId) store.activeQuestId = null;
+	saveStore(store);
 }
 
 /* Copies a quest as "{name} Copy" in the same questline. Pages and
    connections get new ids, and connections are remapped to the copied pages. */
-function duplicateQuest(questId){
-  var store = loadStore();
-  var quest = store.quests[questId];
-  if(!quest) return;
-  var idMap = {};
-  function clonePage(p){
-    var freshId = 'p' + (store.nextPageId++);
-    idMap[p.id] = freshId;
-    return Object.assign({}, p, {
-      id: freshId,
-      fields: (p.fields || []).map(function(f){ return Object.assign({}, f); }),
-      linkedNpcIds: (p.linkedNpcIds || []).slice(),
-      linkedLocationIds: (p.linkedLocationIds || []).slice()
-    });
-  }
-  var pages = (quest.pages || []).map(clonePage);
-  var trash = (quest.trash || []).map(function(t){
-    return {page: t.page ? clonePage(t.page) : null, deletedAt: t.deletedAt};
-  });
-  var connections = (quest.connections || []).map(function(c){
-    return Object.assign({}, c, {
-      id: 'w' + (store.nextConnId++),
-      from: idMap[c.from] || c.from,
-      to: idMap[c.to] || c.to
-    });
-  });
-  var newId = genId();
-  store.quests[newId] = {
-    id: newId,
-    name: (quest.name || 'Untitled Quest') + ' Copy',
-    questlineId: quest.questlineId || null,
-    status: quest.status,
-    description: quest.description,
-    repeatable: quest.repeatable,
-    rewards: quest.rewards,
-    requirements: quest.requirements,
-    pages: pages,
-    connections: connections,
-    trash: trash,
-    pan: quest.pan ? Object.assign({}, quest.pan) : {x: 60, y: 40},
-    zoom: quest.zoom,
-    updatedAt: Date.now()
-  };
-  saveStore(store);
-  return newId;
+function duplicateQuest(questId) {
+	var store = loadStore();
+	var quest = store.quests[questId];
+	if (!quest) return;
+	var idMap = {};
+	function clonePage(p) {
+		var freshId = 'p' + (store.nextPageId++);
+		idMap[p.id] = freshId;
+		return Object.assign({}, p, {
+			id: freshId,
+			fields: (p.fields || []).map(function (f) { return Object.assign({}, f); }),
+			linkedNpcIds: (p.linkedNpcIds || []).slice(),
+			linkedLocationIds: (p.linkedLocationIds || []).slice()
+		});
+	}
+	var pages = (quest.pages || []).map(clonePage);
+	var trash = (quest.trash || []).map(function (t) {
+		return { page: t.page ? clonePage(t.page) : null, deletedAt: t.deletedAt };
+	});
+	var connections = (quest.connections || []).map(function (c) {
+		return Object.assign({}, c, {
+			id: 'w' + (store.nextConnId++),
+			from: idMap[c.from] || c.from,
+			to: idMap[c.to] || c.to
+		});
+	});
+	var newId = genId();
+	store.quests[newId] = {
+		id: newId,
+		name: (quest.name || 'Untitled Quest') + ' Copy',
+		questlineId: quest.questlineId || null,
+		status: quest.status,
+		description: quest.description,
+		repeatable: quest.repeatable,
+		rewards: quest.rewards,
+		requirements: quest.requirements,
+		pages: pages,
+		connections: connections,
+		trash: trash,
+		pan: quest.pan ? Object.assign({}, quest.pan) : { x: 60, y: 40 },
+		zoom: quest.zoom,
+		updatedAt: Date.now()
+	};
+	saveStore(store);
+	return newId;
 }
 
-export function restoreQuestFromTrash(index){
-  var store = loadStore();
-  var entry = store.trashedQuests[index];
-  if(!entry) return;
-  var quest = entry.quest;
-  if(quest.questlineId && !store.questlines[quest.questlineId]) quest.questlineId = null;
-  store.quests[quest.id] = quest;
-  store.trashedQuests.splice(index, 1);
-  saveStore(store);
+export function restoreQuestFromTrash(index) {
+	var store = loadStore();
+	var entry = store.trashedQuests[index];
+	if (!entry) return;
+	var quest = entry.quest;
+	if (quest.questlineId && !store.questlines[quest.questlineId]) quest.questlineId = null;
+	store.quests[quest.id] = quest;
+	store.trashedQuests.splice(index, 1);
+	saveStore(store);
 }
 
 /* Soft delete for a questline. Its quests become standalone and stay
    standalone if the questline is restored. */
-function trashQuestline(qlId){
-  var store = loadStore();
-  var ql = store.questlines[qlId];
-  if(!ql) return;
-  Object.keys(store.quests).forEach(function(qid){
-    if(store.quests[qid].questlineId === qlId) store.quests[qid].questlineId = null;
-  });
-  delete store.questlines[qlId];
-  store.trashedQuestlines.push({questline: ql, deletedAt: Date.now()});
-  if(store.activeQuestlineId === qlId) store.activeQuestlineId = null;
-  saveStore(store);
+function trashQuestline(qlId) {
+	var store = loadStore();
+	var ql = store.questlines[qlId];
+	if (!ql) return;
+	Object.keys(store.quests).forEach(function (qid) {
+		if (store.quests[qid].questlineId === qlId) store.quests[qid].questlineId = null;
+	});
+	delete store.questlines[qlId];
+	store.trashedQuestlines.push({ questline: ql, deletedAt: Date.now() });
+	if (store.activeQuestlineId === qlId) store.activeQuestlineId = null;
+	saveStore(store);
 }
 
-export function restoreQuestlineFromTrash(index){
-  var store = loadStore();
-  var entry = store.trashedQuestlines[index];
-  if(!entry) return;
-  store.questlines[entry.questline.id] = entry.questline;
-  store.trashedQuestlines.splice(index, 1);
-  saveStore(store);
+export function restoreQuestlineFromTrash(index) {
+	var store = loadStore();
+	var entry = store.trashedQuestlines[index];
+	if (!entry) return;
+	store.questlines[entry.questline.id] = entry.questline;
+	store.trashedQuestlines.splice(index, 1);
+	saveStore(store);
 }
 
-export function renderLibrary(){
-  var store = loadStore();
-  var questIds = Object.keys(store.quests);
+export function renderLibrary() {
+	var store = loadStore();
+	var questIds = Object.keys(store.quests);
 
-  var questlineIds = orderedQuestlineIds(store);
-  if(!questlineIds.length){
-    elQuestlineGroups.innerHTML = READ_ONLY
-      ? '<div class="library-empty">No questlines.</div>'
-      : '<div class="library-empty">No questlines yet. Create one, then assign quests to it below.</div>';
-  } else {
-    var qlHtml = '';
-    questlineIds.forEach(function(qlId){
-      var ql = store.questlines[qlId];
-      var members = orderedQuestlineMemberIds(store, qlId).map(function(qid){ return store.quests[qid]; });
-      var qlMenu = '<button type="button" class="dropdown-item" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
-        '<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">Delete questline</button>';
-      qlHtml += '<div class="questline-block' + (ql.collapsed ? ' collapsed' : '') + '" data-questline-id="' + qlId + '">' +
-        '<div class="questline-head" data-role="head"' + (reordering ? ' draggable="true"' : '') + '>' +
-          (reordering ? DRAG_GRIP_HTML : '') +
-          '<span class="chev">&#9662;</span>' +
-          (READ_ONLY
-            ? '<span class="questline-name">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>'
-            : '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>') +
-          '<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : (READ_ONLY ? ' disabled' : ' disabled title="Add a quest to this questline first"')) + '>Open questline</button>' +
-          (READ_ONLY ? '' : rowMenuHtml(qlMenu)) +
-        '</div>' +
-        '<div class="quest-list">' +
-          (members.length ? members.map(function(q){ return questRowHtml(store, q); }).join('') : '<div class="library-empty">' + (READ_ONLY ? 'No quests.' : 'No quests assigned yet.') + '</div>') +
-        '</div>' +
-      '</div>';
-    });
-    elQuestlineGroups.innerHTML = qlHtml;
-  }
+	var questlineIds = orderedQuestlineIds(store);
+	if (!questlineIds.length) {
+		elQuestlineGroups.innerHTML = READ_ONLY
+			? '<div class="library-empty">No questlines.</div>'
+			: '<div class="library-empty">No questlines yet. Create one, then assign quests to it below.</div>';
+	} else {
+		var qlHtml = '';
+		questlineIds.forEach(function (qlId) {
+			var ql = store.questlines[qlId];
+			var members = orderedQuestlineMemberIds(store, qlId).map(function (qid) { return store.quests[qid]; });
+			var qlMenu = '<button type="button" class="dropdown-item" data-role="export-questline"' + (members.length ? '' : ' disabled') + ' title="Export every quest in this questline as real QuestLines .json files, into a folder named after the questline">Export questline</button>' +
+				'<button type="button" class="dropdown-item dropdown-item-danger" data-role="delete-questline" title="Delete questline (its quests become standalone, not deleted)">Delete questline</button>';
+			qlHtml += '<div class="questline-block' + (ql.collapsed ? ' collapsed' : '') + '" data-questline-id="' + qlId + '">' +
+				'<div class="questline-head" data-role="head"' + (reordering ? ' draggable="true"' : '') + '>' +
+				(reordering ? DRAG_GRIP_HTML : '') +
+				'<span class="chev">&#9662;</span>' +
+				(READ_ONLY
+					? '<span class="questline-name">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>'
+					: '<span class="questline-name" data-role="name" tabindex="0" title="Click to rename">' + escapeHtml(ql.name || 'Untitled Questline') + '</span>') +
+				'<button class="btn primary" type="button" data-role="open-questline"' + (members.length ? '' : (READ_ONLY ? ' disabled' : ' disabled title="Add a quest to this questline first"')) + '>Open questline</button>' +
+				(READ_ONLY ? '' : rowMenuHtml(qlMenu)) +
+				'</div>' +
+				'<div class="quest-list">' +
+				(members.length ? members.map(function (q) { return questRowHtml(store, q); }).join('') : '<div class="library-empty">' + (READ_ONLY ? 'No quests.' : 'No quests assigned yet.') + '</div>') +
+				'</div>' +
+				'</div>';
+		});
+		elQuestlineGroups.innerHTML = qlHtml;
+	}
 
-  var standalone = questIds.filter(function(qid){ return !store.quests[qid].questlineId; }).map(function(qid){ return store.quests[qid]; });
-  elStandaloneQuests.innerHTML = standalone.length
-    ? standalone.map(function(q){ return questRowHtml(store, q); }).join('')
-    : '<div class="library-empty">No standalone quests.</div>';
+	var standalone = questIds.filter(function (qid) { return !store.quests[qid].questlineId; }).map(function (qid) { return store.quests[qid]; });
+	elStandaloneQuests.innerHTML = standalone.length
+		? standalone.map(function (q) { return questRowHtml(store, q); }).join('')
+		: '<div class="library-empty">No standalone quests.</div>';
 }
 
-function startInlineRename(labelEl, onSave){
-  var current = labelEl.textContent;
-  var input = document.createElement('input');
-  input.type = 'text';
-  input.value = current;
-  labelEl.replaceWith(input);
-  input.focus();
-  input.select();
-  var done = false;
-  function commit(){
-    if(done) return;
-    done = true;
-    var next = input.value.trim() || current;
-    onSave(next);
-    renderLibrary();
-  }
-  input.addEventListener('blur', commit);
-  input.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ e.preventDefault(); commit(); }
-    else if(e.key === 'Escape'){ done = true; renderLibrary(); }
-  });
+function startInlineRename(labelEl, onSave) {
+	var current = labelEl.textContent;
+	var input = document.createElement('input');
+	input.type = 'text';
+	input.value = current;
+	labelEl.replaceWith(input);
+	input.focus();
+	input.select();
+	var done = false;
+	function commit() {
+		if (done) return;
+		done = true;
+		var next = input.value.trim() || current;
+		onSave(next);
+		renderLibrary();
+	}
+	input.addEventListener('blur', commit);
+	input.addEventListener('keydown', function (e) {
+		if (e.key === 'Enter') { e.preventDefault(); commit(); }
+		else if (e.key === 'Escape') { done = true; renderLibrary(); }
+	});
 }
 
 // Create buttons don't exist in the read-only viewer.
 var elNewQuestlineBtn = document.getElementById('new-questline-btn');
-if(elNewQuestlineBtn) elNewQuestlineBtn.addEventListener('click', function(){
-  var store = loadStore();
-  var id = genId();
-  store.questlines[id] = {id: id, name: 'New Questline'};
-  saveStore(store);
-  renderLibrary();
+if (elNewQuestlineBtn) elNewQuestlineBtn.addEventListener('click', function () {
+	var store = loadStore();
+	var id = genId();
+	store.questlines[id] = { id: id, name: 'New Questline' };
+	saveStore(store);
+	renderLibrary();
 });
 
 // A new quest opens straight onto its canvas.
 var elNewQuestBtn = document.getElementById('new-quest-btn');
-if(elNewQuestBtn) elNewQuestBtn.addEventListener('click', function(){
-  var store = loadStore();
-  var id = genId();
-  store.quests[id] = {
-    id: id,
-    name: 'New Quest',
-    questlineId: null,
-    status: undefined,
-    pages: [],
-    connections: [],
-    trash: [],
-    pan: {x: 60, y: 40},
-    zoom: 1,
-    updatedAt: Date.now()
-  };
-  saveStore(store);
-  switchToQuest(id);
+if (elNewQuestBtn) elNewQuestBtn.addEventListener('click', function () {
+	var store = loadStore();
+	var id = genId();
+	store.quests[id] = {
+		id: id,
+		name: 'New Quest',
+		questlineId: null,
+		status: undefined,
+		pages: [],
+		connections: [],
+		trash: [],
+		pan: { x: 60, y: 40 },
+		zoom: 1,
+		updatedAt: Date.now()
+	};
+	saveStore(store);
+	switchToQuest(id);
 });
 
 // "⋮" row menus: one open at a time, closed by an outside click, Escape,
 // or choosing an item.
-function closeAllRowMenus(except){
-  document.querySelectorAll('.row-menu > [data-role="menu"]:not([hidden])').forEach(function(menu){
-    if(menu === except) return;
-    menu.hidden = true;
-    menu.closest('.row-menu').querySelector('[data-role="menu-toggle"]').setAttribute('aria-expanded', 'false');
-  });
+function closeAllRowMenus(except) {
+	document.querySelectorAll('.row-menu > [data-role="menu"]:not([hidden])').forEach(function (menu) {
+		if (menu === except) return;
+		menu.hidden = true;
+		menu.closest('.row-menu').querySelector('[data-role="menu-toggle"]').setAttribute('aria-expanded', 'false');
+	});
 }
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.row-menu')) closeAllRowMenus();
+document.addEventListener('click', function (e) {
+	if (!e.target.closest('.row-menu')) closeAllRowMenus();
 });
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape') closeAllRowMenus();
+document.addEventListener('keydown', function (e) {
+	if (e.key === 'Escape') closeAllRowMenus();
 });
-function handleRowMenuToggle(e){
-  var toggle = e.target.closest('[data-role="menu-toggle"]');
-  if(!toggle) return false;
-  var menu = toggle.closest('.row-menu').querySelector('[data-role="menu"]');
-  var willOpen = menu.hidden;
-  closeAllRowMenus(willOpen ? menu : null);
-  menu.hidden = !willOpen;
-  toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  return true;
-}
-
-elQuestlineGroups.addEventListener('click', function(e){
-  if(reordering){
-    // Collapsing still works while reordering.
-    var reorderHead = e.target.closest('.questline-head');
-    if(reorderHead) toggleQuestlineCollapsed(reorderHead.closest('.questline-block'));
-    return;
-  }
-  if(handleRowMenuToggle(e)) return;
-  var nameEl = !READ_ONLY && e.target.closest('.questline-name');
-  if(nameEl){
-    // Read the id now: startInlineRename detaches nameEl, so closest()
-    // would fail inside onSave.
-    var qlIdForRename = nameEl.closest('.questline-block').dataset.questlineId;
-    startInlineRename(nameEl, function(next){
-      var store = loadStore();
-      if(store.questlines[qlIdForRename]){ store.questlines[qlIdForRename].name = next; saveStore(store); }
-    });
-    return;
-  }
-  var openQuestline = e.target.closest('[data-role="open-questline"]');
-  if(openQuestline){
-    var qlBlock = openQuestline.closest('.questline-block');
-    switchToQuestline(qlBlock.dataset.questlineId);
-    return;
-  }
-  var exportQuestlineBtn = e.target.closest('[data-role="export-questline"]');
-  if(exportQuestlineBtn){
-    var qlIdForExport = exportQuestlineBtn.closest('.questline-block').dataset.questlineId;
-    closeAllRowMenus();
-    exportQuestlineBtn.disabled = true;
-    exportQuestline(qlIdForExport).then(function(result){
-      exportQuestlineBtn.disabled = false;
-      if(result.message) flashStatus(result.message, result.ok ? 2500 : 6000);
-    });
-    return;
-  }
-  var deleteQuestline = e.target.closest('[data-role="delete-questline"]');
-  if(deleteQuestline){
-    var qlId3 = deleteQuestline.closest('.questline-block').dataset.questlineId;
-    if(confirmDangerClick(deleteQuestline)){
-      trashQuestline(qlId3);
-      flashStatus('Questline moved to trash', 2000);
-      renderLibrary();
-    }
-    return;
-  }
-  var head = e.target.closest('.questline-head');
-  if(head && !e.target.closest('button')){
-    toggleQuestlineCollapsed(head.closest('.questline-block'));
-    return;
-  }
-  handleQuestRowClick(e);
-});
-
-function toggleQuestlineCollapsed(block){
-  var isCollapsed = block.classList.toggle('collapsed');
-  var store = loadStore();
-  var qlId = block.dataset.questlineId;
-  if(store.questlines[qlId]){
-    store.questlines[qlId].collapsed = isCollapsed;
-    saveStore(store);
-  }
+function handleRowMenuToggle(e) {
+	var toggle = e.target.closest('[data-role="menu-toggle"]');
+	if (!toggle) return false;
+	var menu = toggle.closest('.row-menu').querySelector('[data-role="menu"]');
+	var willOpen = menu.hidden;
+	closeAllRowMenus(willOpen ? menu : null);
+	menu.hidden = !willOpen;
+	toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+	return true;
 }
 
-elStandaloneQuests.addEventListener('click', function(e){
-  if(reordering) return;
-  if(handleRowMenuToggle(e)) return;
-  handleQuestRowClick(e);
+elQuestlineGroups.addEventListener('click', function (e) {
+	if (reordering) {
+		// Collapsing still works while reordering.
+		var reorderHead = e.target.closest('.questline-head');
+		if (reorderHead) toggleQuestlineCollapsed(reorderHead.closest('.questline-block'));
+		return;
+	}
+	if (handleRowMenuToggle(e)) return;
+	var nameEl = !READ_ONLY && e.target.closest('.questline-name');
+	if (nameEl) {
+		// Read the id now: startInlineRename detaches nameEl, so closest()
+		// would fail inside onSave.
+		var qlIdForRename = nameEl.closest('.questline-block').dataset.questlineId;
+		startInlineRename(nameEl, function (next) {
+			var store = loadStore();
+			if (store.questlines[qlIdForRename]) { store.questlines[qlIdForRename].name = next; saveStore(store); }
+		});
+		return;
+	}
+	var openQuestline = e.target.closest('[data-role="open-questline"]');
+	if (openQuestline) {
+		var qlBlock = openQuestline.closest('.questline-block');
+		switchToQuestline(qlBlock.dataset.questlineId);
+		return;
+	}
+	var exportQuestlineBtn = e.target.closest('[data-role="export-questline"]');
+	if (exportQuestlineBtn) {
+		var qlIdForExport = exportQuestlineBtn.closest('.questline-block').dataset.questlineId;
+		closeAllRowMenus();
+		exportQuestlineBtn.disabled = true;
+		exportQuestline(qlIdForExport).then(function (result) {
+			exportQuestlineBtn.disabled = false;
+			if (result.message) flashStatus(result.message, result.ok ? 2500 : 6000);
+		});
+		return;
+	}
+	var deleteQuestline = e.target.closest('[data-role="delete-questline"]');
+	if (deleteQuestline) {
+		var qlId3 = deleteQuestline.closest('.questline-block').dataset.questlineId;
+		if (confirmDangerClick(deleteQuestline)) {
+			trashQuestline(qlId3);
+			flashStatus('Questline moved to trash', 2000);
+			renderLibrary();
+		}
+		return;
+	}
+	var head = e.target.closest('.questline-head');
+	if (head && !e.target.closest('button')) {
+		toggleQuestlineCollapsed(head.closest('.questline-block'));
+		return;
+	}
+	handleQuestRowClick(e);
+});
+
+function toggleQuestlineCollapsed(block) {
+	var isCollapsed = block.classList.toggle('collapsed');
+	var store = loadStore();
+	var qlId = block.dataset.questlineId;
+	if (store.questlines[qlId]) {
+		store.questlines[qlId].collapsed = isCollapsed;
+		saveStore(store);
+	}
+}
+
+elStandaloneQuests.addEventListener('click', function (e) {
+	if (reordering) return;
+	if (handleRowMenuToggle(e)) return;
+	handleQuestRowClick(e);
 });
 
 // window.confirm() is suppressed in the sandboxed page, so destructive
@@ -360,90 +360,92 @@ elStandaloneQuests.addEventListener('click', function(e){
 // seconds, and a second click on the same button confirms.
 var armedDeleteBtn = null;
 var armedDeleteTimer = null;
-function resetArmedDelete(){
-  if(armedDeleteBtn){
-    armedDeleteBtn.textContent = armedDeleteBtn.dataset.origLabel || '×';
-    armedDeleteBtn.classList.remove('armed');
-  }
-  armedDeleteBtn = null;
-  if(armedDeleteTimer){ clearTimeout(armedDeleteTimer); armedDeleteTimer = null; }
+function resetArmedDelete() {
+	if (armedDeleteBtn) {
+		armedDeleteBtn.textContent = armedDeleteBtn.dataset.origLabel || '×';
+		armedDeleteBtn.classList.remove('armed');
+	}
+	armedDeleteBtn = null;
+	if (armedDeleteTimer) { clearTimeout(armedDeleteTimer); armedDeleteTimer = null; }
 }
 // Returns true on the confirming click, false when it only armed the button.
-function confirmDangerClick(btn){
-  if(armedDeleteBtn === btn){
-    resetArmedDelete();
-    return true;
-  }
-  resetArmedDelete();
-  armedDeleteBtn = btn;
-  btn.dataset.origLabel = btn.textContent;
-  btn.textContent = 'Confirm?';
-  btn.classList.add('armed');
-  armedDeleteTimer = setTimeout(resetArmedDelete, 4000);
-  return false;
+function confirmDangerClick(btn) {
+	if (armedDeleteBtn === btn) {
+		resetArmedDelete();
+		return true;
+	}
+	resetArmedDelete();
+	armedDeleteBtn = btn;
+	btn.dataset.origLabel = btn.textContent;
+	btn.textContent = 'Confirm?';
+	btn.classList.add('armed');
+	armedDeleteTimer = setTimeout(resetArmedDelete, 4000);
+	return false;
 }
 
-function handleQuestRowClick(e){
-  var nameEl = !READ_ONLY && e.target.closest('.quest-name');
-  var row = e.target.closest('.quest-row');
-  if(!row) return;
-  var questId = row.dataset.questId;
-  var deleteBtn = e.target.closest('[data-role="delete-quest"]');
-  if(deleteBtn){
-    if(confirmDangerClick(deleteBtn)){
-      trashQuest(questId);
-      flashStatus('Quest moved to trash', 2000);
-      renderLibrary();
-    }
-    return;
-  }
-  if(nameEl){
-    startInlineRename(nameEl, function(next){
-      var store = loadStore();
-      if(store.quests[questId]){ store.quests[questId].name = next; saveStore(store); }
-    });
-    return;
-  }
-  if(e.target.closest('[data-role="open-quest"]')){
-    switchToQuest(questId);
-    return;
-  }
-  if(e.target.closest('[data-role="export-quest"]')){
-    closeAllRowMenus();
-    exportQuest(questId);
-    return;
-  }
-  if(e.target.closest('[data-role="duplicate-quest"]')){
-    duplicateQuest(questId);
-    flashStatus('Quest duplicated', 2000);
-    renderLibrary();
-  }
+function handleQuestRowClick(e) {
+	var nameEl = !READ_ONLY && e.target.closest('.quest-name');
+	var row = e.target.closest('.quest-row');
+	if (!row) return;
+	var questId = row.dataset.questId;
+	var deleteBtn = e.target.closest('[data-role="delete-quest"]');
+	if (deleteBtn) {
+		if (confirmDangerClick(deleteBtn)) {
+			trashQuest(questId);
+			flashStatus('Quest moved to trash', 2000);
+			renderLibrary();
+		}
+		return;
+	}
+	if (nameEl) {
+		startInlineRename(nameEl, function (next) {
+			var store = loadStore();
+			if (store.quests[questId]) { store.quests[questId].name = next; saveStore(store); }
+		});
+		return;
+	}
+	if (e.target.closest('[data-role="open-quest"]')) {
+		switchToQuest(questId);
+		return;
+	}
+	if (e.target.closest('[data-role="export-quest"]')) {
+		closeAllRowMenus();
+		exportQuest(questId);
+		return;
+	}
+	if (e.target.closest('[data-role="duplicate-quest"]')) {
+		duplicateQuest(questId);
+		flashStatus('Quest duplicated', 2000);
+		renderLibrary();
+	}
 }
 
-function handleAssignChange(e){
-  var select = e.target.closest('[data-role="assign"]');
-  if(!select) return;
-  var row = select.closest('.quest-row');
-  var questId = row.dataset.questId;
-  var store = loadStore();
-  if(!store.quests[questId]) return;
-  store.quests[questId].questlineId = select.value || null;
-  saveStore(store);
-  renderLibrary();
+function handleAssignChange(e) {
+	var select = e.target.closest('[data-role="assign"]');
+	if (!select) return;
+	var row = select.closest('.quest-row');
+	var questId = row.dataset.questId;
+	var store = loadStore();
+	if (!store.quests[questId]) return;
+	store.quests[questId].questlineId = select.value || null;
+	// Clear previous order and land at the end of the new one.
+	delete store.quests[questId].order;
+	saveStore(store);
+	renderLibrary();
 }
 elQuestlineGroups.addEventListener('change', handleAssignChange);
 elStandaloneQuests.addEventListener('change', handleAssignChange);
 
-function handleStatusChange(e){
-  var select = e.target.closest('[data-role="status"]');
-  if(!select) return;
-  var row = select.closest('.quest-row');
-  var questId = row.dataset.questId;
-  var store = loadStore();
-  if(!store.quests[questId]) return;
-  store.quests[questId].status = select.value || null;
-  saveStore(store);
-  renderLibrary();
+function handleStatusChange(e) {
+	var select = e.target.closest('[data-role="status"]');
+	if (!select) return;
+	var row = select.closest('.quest-row');
+	var questId = row.dataset.questId;
+	var store = loadStore();
+	if (!store.quests[questId]) return;
+	store.quests[questId].status = select.value || null;
+	saveStore(store);
+	renderLibrary();
 }
 elQuestlineGroups.addEventListener('change', handleStatusChange);
 elStandaloneQuests.addEventListener('change', handleStatusChange);
@@ -452,81 +454,81 @@ elStandaloneQuests.addEventListener('change', handleStatusChange);
    Dragging moves DOM rows; "Finished reordering" saves the DOM order to
    each questline's and quest's `order`. Quests can only move within their
    own questline. */
-function startReordering(){
-  if(READ_ONLY || reordering) return;
-  reordering = true;
-  closeAllRowMenus();
-  elLibraryView.classList.add('reordering');
-  if(elReorderBar) elReorderBar.hidden = false;
-  renderLibrary();
+function startReordering() {
+	if (READ_ONLY || reordering) return;
+	reordering = true;
+	closeAllRowMenus();
+	elLibraryView.classList.add('reordering');
+	if (elReorderBar) elReorderBar.hidden = false;
+	renderLibrary();
 }
 
-function finishReordering(){
-  if(!reordering) return;
-  var store = loadStore();
-  elQuestlineGroups.querySelectorAll('.questline-block').forEach(function(block, i){
-    var ql = store.questlines[block.dataset.questlineId];
-    if(ql) ql.order = i;
-    block.querySelectorAll('.quest-row').forEach(function(row, j){
-      var quest = store.quests[row.dataset.questId];
-      if(quest) quest.order = j;
-    });
-  });
-  saveStore(store);
-  reordering = false;
-  elLibraryView.classList.remove('reordering');
-  if(elReorderBar) elReorderBar.hidden = true;
-  renderLibrary();
-  flashStatus('Quest order saved', 2000);
+function finishReordering() {
+	if (!reordering) return;
+	var store = loadStore();
+	elQuestlineGroups.querySelectorAll('.questline-block').forEach(function (block, i) {
+		var ql = store.questlines[block.dataset.questlineId];
+		if (ql) ql.order = i;
+		block.querySelectorAll('.quest-row').forEach(function (row, j) {
+			var quest = store.quests[row.dataset.questId];
+			if (quest) quest.order = j;
+		});
+	});
+	saveStore(store);
+	reordering = false;
+	elLibraryView.classList.remove('reordering');
+	if (elReorderBar) elReorderBar.hidden = true;
+	renderLibrary();
+	flashStatus('Quest order saved', 2000);
 }
 
-if(elReorderQuestsBtn) elReorderQuestsBtn.addEventListener('click', startReordering);
-if(elFinishReorderBtn) elFinishReorderBtn.addEventListener('click', finishReordering);
+if (elReorderQuestsBtn) elReorderQuestsBtn.addEventListener('click', startReordering);
+if (elFinishReorderBtn) elFinishReorderBtn.addEventListener('click', finishReordering);
 
 // Leaving the library mid-reorder saves the order.
-onViewChange(function(){
-  if(reordering && state.view !== 'library') finishReordering();
+onViewChange(function () {
+	if (reordering && state.view !== 'library') finishReordering();
 });
 
 var dragEl = null;
 var dragKind = null;   // 'questline' | 'quest'
 
-elQuestlineGroups.addEventListener('dragstart', function(e){
-  if(!reordering) return;
-  var row = e.target.closest('.quest-row[draggable="true"]');
-  var head = !row && e.target.closest('.questline-head[draggable="true"]');
-  if(!row && !head) return;
-  dragKind = row ? 'quest' : 'questline';
-  dragEl = row || head.closest('.questline-block');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', '');
-  dragEl.classList.add('dragging');
+elQuestlineGroups.addEventListener('dragstart', function (e) {
+	if (!reordering) return;
+	var row = e.target.closest('.quest-row[draggable="true"]');
+	var head = !row && e.target.closest('.questline-head[draggable="true"]');
+	if (!row && !head) return;
+	dragKind = row ? 'quest' : 'questline';
+	dragEl = row || head.closest('.questline-block');
+	e.dataTransfer.effectAllowed = 'move';
+	e.dataTransfer.setData('text/plain', '');
+	dragEl.classList.add('dragging');
 });
 
-elQuestlineGroups.addEventListener('dragover', function(e){
-  if(!dragEl) return;
-  var target;
-  if(dragKind === 'questline'){
-    target = e.target.closest('.questline-block');
-  } else {
-    target = e.target.closest('.quest-row');
-    if(target && target.parentNode !== dragEl.parentNode) target = null;
-  }
-  if(!target) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  if(target === dragEl) return;
-  var rect = target.getBoundingClientRect();
-  var before = e.clientY < rect.top + rect.height / 2;
-  target.parentNode.insertBefore(dragEl, before ? target : target.nextSibling);
+elQuestlineGroups.addEventListener('dragover', function (e) {
+	if (!dragEl) return;
+	var target;
+	if (dragKind === 'questline') {
+		target = e.target.closest('.questline-block');
+	} else {
+		target = e.target.closest('.quest-row');
+		if (target && target.parentNode !== dragEl.parentNode) target = null;
+	}
+	if (!target) return;
+	e.preventDefault();
+	e.dataTransfer.dropEffect = 'move';
+	if (target === dragEl) return;
+	var rect = target.getBoundingClientRect();
+	var before = e.clientY < rect.top + rect.height / 2;
+	target.parentNode.insertBefore(dragEl, before ? target : target.nextSibling);
 });
 
-elQuestlineGroups.addEventListener('drop', function(e){
-  if(dragEl) e.preventDefault();
+elQuestlineGroups.addEventListener('drop', function (e) {
+	if (dragEl) e.preventDefault();
 });
 
-elQuestlineGroups.addEventListener('dragend', function(){
-  if(dragEl) dragEl.classList.remove('dragging');
-  dragEl = null;
-  dragKind = null;
+elQuestlineGroups.addEventListener('dragend', function () {
+	if (dragEl) dragEl.classList.remove('dragging');
+	dragEl = null;
+	dragKind = null;
 });
