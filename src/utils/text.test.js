@@ -279,7 +279,17 @@ describe('normalizeBr', () => {
 
 describe('brToText / textToBr', () => {
   it('converts <br> to real line breaks for display, keeping blank lines', () => {
-    expect(brToText('First line. <br>  <br> Second line.')).toBe('First line. \n  \n Second line.');
+    expect(brToText('First line. <br>  <br> Second line.')).toBe('First line.\n\nSecond line.');
+  });
+
+  it('is stable across repeated save/reopen round trips', () => {
+    const once = textToBr(brToText('a <br> b'));
+    expect(once).toBe('a <br> b');
+    expect(textToBr(brToText(once))).toBe('a <br> b');
+  });
+
+  it('strips padding already accumulated around <br> in stored values', () => {
+    expect(brToText('a        <br>         b')).toBe('a\nb');
   });
 
   it('converts real line breaks back to <br>, and re-parses the same as the original', () => {

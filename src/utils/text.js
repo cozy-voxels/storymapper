@@ -56,10 +56,13 @@ export function splitLines(raw){
    reading it out for save, so storage/export never changes shape but
    editing shows clean multi-line text. Unlike splitLines(), these don't
    trim or drop blank lines -- a blank line matters here (it's how a
-   paragraph break like "<br>  <br>" stays a paragraph break). */
+   paragraph break like "<br>  <br>" stays a paragraph break). brToText()
+   also eats the spaces around each <br> -- textToBr() writes the stored
+   " <br> " padding, so leaving it in the textarea would add another space
+   on each side of every line break on every save. */
 export function brToText(raw){
   if(!raw) return '';
-  return raw.replace(/<br\s*\/?>/gi, '\n');
+  return raw.replace(/[ \t]*<br\s*\/?>[ \t]*/gi, '\n');
 }
 
 export function textToBr(text){
