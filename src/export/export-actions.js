@@ -5,18 +5,10 @@ import { questToJsonString } from './quest-json-export.js';
 import { slugify } from '../utils/text.js';
 
 /* ================= export actions =================
-   The three export needs, each a different shape:
-   1. Export all data -- a raw dump of everything StoryMapper knows
-      (every quest, questline, trash, World data), with none of the real
-      QuestLines schema/validity requirements #2 and #3 have. A backup/
-      debugging artifact, not something QuestLines or quests-and-npcs
-      ever reads.
-   2. Export one quest -- a real QuestLines quest .json (quest-json-export.js
-      is the actual schema work); excludes World data and canvas layout/
-      arrows, neither of which the real schema has room for.
-   3. Export a whole questline -- every member quest as its own real
-      QuestLines file, written into a directory named after the
-      questline, per QUEST_GUIDE.md's file & folder structure rule. */
+   1. Export all data: raw store dump, for backup.
+   2. Export quest: one QuestLines quest .json (no World data or layout).
+   3. Export questline: each member quest as a QuestLines file in a folder
+      named after the questline. */
 
 function downloadTextFile(filename, text){
   var blob = new Blob([text], {type: 'application/json'});
@@ -31,21 +23,15 @@ function downloadTextFile(filename, text){
 }
 
 export function exportAllData(){
-  // Only flush if something is actually open -- state.pages/questName/etc.
-  // are stale leftovers from whatever was last open while in the Library
-  // or World views (see views.js's showLibraryView), so persisting
-  // unconditionally here used to write a phantom quest keyed by
-  // state.questId === null (JS coerces store.quests[null] to the key
-  // "null") full of that stale data.
+  // Only save if something is open; otherwise state is stale and would be
+  // saved as store.quests["null"].
   if(state.questId || state.activeQuestlineId) persistCurrent();
   var store = loadStore();
   var stamp = new Date().toISOString().slice(0, 10);
   downloadTextFile('storymapper-export-' + stamp + '.json', JSON.stringify(store, null, 2));
 }
 
-/* Same raw dump as exportAllData, minus trash (see publishableStore), saved
-   as data.json: the one file the read-only viewer (view/index.html) loads,
-   ready to upload right next to it. */
+/* Saves publishableStore() as data.json for the read-only viewer. */
 export function exportPublishData(){
   if(state.questId || state.activeQuestlineId) persistCurrent();
   downloadTextFile('data.json', JSON.stringify(publishableStore(loadStore()), null, 2));
@@ -59,12 +45,9 @@ export function exportQuest(questId){
   downloadTextFile(slugify(quest.name) + '.json', questToJsonString(quest, questlineName));
 }
 
-/* Uses the File System Access API (Chrome/Edge) so every member quest can
-   be written after a single folder-picker grant instead of one
-   save-dialog per file. Returns {ok, message} rather than throwing --
-   callers show `message` via flashStatus when present (a user-cancelled
-   picker comes back with no message, since that's not an error worth
-   surfacing). */
+/* Writes all member quests via one folder picker (File System Access API,
+   Chrome/Edge). Returns {ok, message}; message is empty if the user
+   cancelled. */
 export async function exportQuestline(qlId){
   var store = loadStore();
   var ql = store.questlines[qlId];

@@ -29,9 +29,8 @@ ValidationReport.prototype.infoCount = function(){ return this.count(ValidationL
 ValidationReport.prototype.summary = function(){
   return this.errorCount() + ' errors, ' + this.warningCount() + ' warnings, ' + this.infoCount() + ' info';
 };
-// Unlike the in-game /ql validate (chat-length constrained to the top 5),
-// the editor panel has room to show everything -- issues are still sorted
-// errors-first/warnings-next/info-last, same ordering the command uses.
+// Shows all issues (the in-game command shows 5), sorted errors, warnings,
+// then info.
 ValidationReport.prototype.sortedIssues = function(){
   var byLevel = {};
   LEVEL_ORDER.forEach(function(l){ byLevel[l] = []; });

@@ -58,12 +58,8 @@ function validateGlobalRequirement(parts, path, report){
   }
 }
 
-// `isKnownRequirement` lets a caller recognize types StoryMapper itself
-// doesn't know about (e.g. a custom requirement from another plugin) --
-// unlike the live mod, there's no server-side type registry to consult
-// here, so anything not in the switch below always falls through to the
-// generic "unrecognised" warning. A caller may pass a custom checker to
-// change that behavior (see quest-validator.js).
+// Types not in the switch warn as unrecognised unless `isKnownRequirement`
+// accepts them (e.g. custom types from other plugins).
 export function validateRequirement(req, path, report, isKnownRequirement){
   if(req === null || req === undefined || req.trim() === ''){
     report.error(path, 'Requirement must be a non-empty string.');
@@ -83,7 +79,7 @@ export function validateRequirement(req, path, report, isKnownRequirement){
   var parts = req.split(':');
   var type = parts[0];
   var typeLc = type.toLowerCase();
-  if(req.indexOf('{') !== -1) return; // runtime-interpolated value, can't statically validate
+  if(req.indexOf('{') !== -1) return; // interpolated at runtime
 
   switch(typeLc){
     case 'questcompleted': case 'questnotcompleted': case 'queststarted': case 'questnotstarted':

@@ -8,10 +8,8 @@ import { READ_ONLY } from '../mode.js';
 
 var BORDER_W = 1;
 
-/* Anchor points sit exactly on the header edges: top-center, left-center,
-   right-center of the header (matching the .handle-* CSS placement), not
-   the middle of the whole card. Header height is measured from the live
-   DOM since long NPC names can wrap it taller. */
+/* Anchors sit on the header edges, matching the .handle-* CSS. Header
+   height is measured live because long names can wrap. */
 export function anchorPoint(page, side){
   var headerEl = cardEl(page.id) ? cardEl(page.id).querySelector('.card-header') : null;
   var headerH = headerEl ? headerEl.offsetHeight : 56;
@@ -24,8 +22,7 @@ export function anchorPoint(page, side){
   return {x: page.x + BORDER_W, y: page.y + BORDER_W + headerH / 2};
 }
 
-/* Unit vector each side's control handle pulls toward, so the curve
-   leaves/arrives perpendicular to the edge it's anchored on. */
+/* Control-point direction per side, so curves meet edges perpendicularly. */
 export function controlDir(side){
   if(side === 'top') return {x: 0, y: -1};
   if(side === 'right') return {x: 1, y: 0};
@@ -56,12 +53,8 @@ export function bezierPointAt(b, t){
   };
 }
 
-// When a page links to another page and that other page links straight
-// back, the second-added arrow of the pair is the "return" leg — flagged
-// here so renderWires can draw it grey instead of the standard pink. Pairs
-// are matched by array order rather than creation timestamp (connections
-// carry none), which in practice is the same thing: the forward arrow gets
-// drawn first, the "go back" arrow gets added after it.
+// For A->B / B->A pairs, flags the later one in array order as the "return"
+// arrow, which renderWires draws grey.
 export function computeMutualReturnIds(connections){
   var returnIds = {};
   connections.forEach(function(a, i){
@@ -78,11 +71,8 @@ export function computeMutualReturnIds(connections){
 }
 
 export function renderWires(){
-  // .children (elements only) rather than .childNodes -- index.html's
-  // <defs> (holding the arrowhead markers) is formatted with surrounding
-  // whitespace, which childNodes counts as a text node ahead of <defs>,
-  // so the childNodes version of this loop deleted <defs> itself on the
-  // very first render and every arrow silently lost its marker-end.
+  // Use .children, not .childNodes: a whitespace text node before <defs>
+  // would make this loop delete the arrowhead markers.
   while(elWires.children.length > 1){
     elWires.removeChild(elWires.lastElementChild);
   }
@@ -97,8 +87,7 @@ export function renderWires(){
     hit.setAttribute('class', 'wire-hit');
     hit.dataset.conn = conn.id;
     hit.style.pointerEvents = 'stroke';
-    // Read-only: arrows can't be selected (selecting is only a step toward
-    // deleting or relabeling one), but the hit path stays for its tooltip.
+    // Read-only: no selection, but keep the hit path for its tooltip.
     if(!READ_ONLY){
       hit.addEventListener('click', function(e){
         e.stopPropagation();
@@ -106,11 +95,8 @@ export function renderWires(){
         renderWires();
       });
     }
-    // A same-quest arrow built from a response carries that response's
-    // text; a cross-quest arrow carries the raw requirement string (e.g.
-    // "questCompleted:welcome_herald") that produced it. Either way, the
-    // full text still shows here as a hover tooltip even after the
-    // on-canvas label below has truncated it.
+    // Full label (response text or cross-quest requirement) as a tooltip,
+    // since the on-canvas label is truncated.
     if(conn.label){
       var titleEl = document.createElementNS('http://www.w3.org/2000/svg','title');
       titleEl.textContent = conn.label;
@@ -125,14 +111,8 @@ export function renderWires(){
     visible.setAttribute('marker-end', isReturn ? 'url(#arrowhead-return)' : 'url(#arrowhead)');
     elWires.appendChild(visible);
 
-    // Ride the response text (or, for auto-drawn cross-quest arrows, the
-    // quest-state gate) along the wire itself — sits at t=0.35 so it never
-    // collides with the delete control, which appears at the t=0.5 midpoint
-    // only while the wire is selected. Skipped for a same-quest arrow when
-    // its source page currently has only one response: with nothing to
-    // disambiguate, the label is just clutter (checked live against the
-    // page's current Response(s) field, not the label's own snapshot, so
-    // trimming a page down to one response quietly stops labeling it too).
+    // Label at t=0.35 to stay clear of the delete control at t=0.5. Hidden
+    // on same-quest arrows whose source page currently has one response.
     var showWireLabel = conn.label && (conn._cross || responseChoicesForPage(from).length > 1);
     if(showWireLabel){
       var labelPt = bezierPointAt(bezierParts(from, conn.fromSide, to, conn.toSide), 0.35);
@@ -170,8 +150,7 @@ export function renderWires(){
       });
       elWires.appendChild(g);
 
-      // Only worth offering when the source page actually has response
-      // text to pick from — a page with none has nothing to label with.
+      // Label button, only if the source page has responses.
       var labelChoices = responseChoicesForPage(from);
       if(labelChoices.length){
         var tg = document.createElementNS('http://www.w3.org/2000/svg','g');
@@ -200,11 +179,9 @@ export function removeConnection(id){
   renderWires();
 }
 
-/* A small floating chooser, positioned over the canvas at a screen point,
-   offering a wire's source-page responses as its label. Used both right
-   after hand-drawing a new connection (when the source page has more than
-   one response, so which one this arrow represents isn't obvious) and from
-   the tag button on an already-selected wire (to set or change it later). */
+/* Floating chooser for picking a wire's label from its source page's
+   responses. Opened after drawing a connection and from a selected wire's
+   label button. */
 export function closeConnLabelChooser(){
   var existing = document.getElementById('conn-label-chooser');
   if(existing) existing.remove();

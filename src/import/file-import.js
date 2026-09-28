@@ -9,17 +9,12 @@ import { renderLibrary } from '../library/library-view.js';
 import { isStorymapperExport } from './storymapper-export.js';
 
 /* ================= file import ================= */
-// Importing a .md draft always creates a brand-new standalone quest, never
-// acts on whatever's currently open — so the control lives in the library
-// rather than the canvas topbar. Importing a real quest .json is keyed by
-// its filename instead (the QuestLines convention: quest id == filename),
-// so re-importing the same file updates that quest in place rather than
-// piling up duplicates.
+// A .md import always creates a new standalone quest. A .json import is
+// keyed by filename (QuestLines: quest id == filename), so re-importing
+// updates that quest in place.
 
-/* If the quest JSON declares a QuestlineId, honor it even on a single-file
-   import: find or create that questline (using QuestlineTitle for its
-   name) so the quest lands where the source data says it belongs, rather
-   than always dropping it into Standalone quests. */
+/* Finds or creates the questline named by the JSON's QuestlineId, even on a
+   single-file import. */
 export function resolveQuestlineForJson(store, qj){
   if(!qj.QuestlineId) return null;
   if(!store.questlines[qj.QuestlineId]){
@@ -30,12 +25,9 @@ export function resolveQuestlineForJson(store, qj){
   return qj.QuestlineId;
 }
 
-/* Imports (or re-imports) one quest into the store, keyed by a stable id
-   derived from its filename — per the QuestLines convention, the quest id
-   always matches the filename. A re-import matches pages by pageId to
-   preserve any manual repositioning: surviving pages keep their x/y,
-   brand-new pages get laid out below the rest, and pages no longer present
-   in the source are soft-deleted to trash (recoverable), never dropped. */
+/* Imports or re-imports one quest, keyed by filename. On re-import, pages
+   are matched by pageId: existing pages keep their x/y, new pages go below
+   the rest, and removed pages move to trash. */
 export function importOrUpdateQuest(questId, questName, built, questlineId){
   var store = loadStore();
   var existing = store.quests[questId];
@@ -61,10 +53,7 @@ export function importOrUpdateQuest(questId, questName, built, questlineId){
       if(!stillPresent[p.pageId]) trash.push({page: p, deletedAt: Date.now()});
     });
   } else {
-    // Lay out using the flow-ordered copy, not `pages` itself -- `pages`
-    // must stay in the source's real page-priority order for export (see
-    // buildQuestFromJson), and layoutPages() mutates x/y in place on the
-    // same page objects either way, so this only affects grid placement.
+    // Lay out in flow order; `pages` keeps the source priority order for export.
     layoutPages(built.layoutOrder || pages);
     trash = [];
   }
@@ -73,9 +62,7 @@ export function importOrUpdateQuest(questId, questName, built, questlineId){
     name: questName,
     questlineId: questlineId || null,
     status: existing && existing.status,
-    // Always taken fresh from this import, like pages/connections --
-    // matches the QuestLines convention that quest id == filename, so a
-    // re-import is meant to replace this quest's data wholesale, not merge.
+    // Re-import replaces metadata rather than merging it.
     description: built.meta.description,
     repeatable: built.meta.repeatable,
     rewards: built.meta.rewards,
@@ -89,10 +76,7 @@ export function importOrUpdateQuest(questId, questName, built, questlineId){
   };
   store.nextPageId = state.nextPageId;
   store.nextConnId = state.nextConnId;
-  // Throw rather than swallow: the questline folder importer wraps each
-  // member's import in its own try/catch specifically so one failed save
-  // (e.g. storage full) is reported and skipped instead of silently
-  // leaving that quest missing with no explanation.
+  // Throw so callers can report the failure (e.g. storage full).
   if(!saveStore(store)) throw new Error('could not save to this browser (storage may be full)');
   return store;
 }
@@ -108,8 +92,7 @@ elFileInput.addEventListener('change', function(){
       var qj;
       try{ qj = JSON.parse(String(reader.result)); }
       catch(e){ flashStatus('Could not parse "' + file.name + '" as JSON', 4000); return; }
-      // A full "Export all data" dump isn't a quest -- restoring it replaces
-      // everything, so point at the one control that confirms that first.
+      // A full export replaces everything; send the user to the confirming control.
       if(isStorymapperExport(qj)){
         flashStatus('"' + file.name + '" is a full StoryMapper export — use Options › Import Storymapper JSON… to restore it', 6000);
         return;
@@ -138,12 +121,9 @@ elFileInput.addEventListener('change', function(){
 });
 
 /* ---- questline folder import ---- */
-// Groups the selected folder's *.json files by their own QuestlineId
-// (usually all the same, but handled per-group in case a folder ever
-// mixes quests from more than one questline), imports/updates every
-// member quest, then auto-draws cross-quest arrows from any
-// questStarted:/questCompleted:/questNotStarted:/questNotCompleted:
-// requirement that references a sibling quest in the same group.
+// Groups the folder's *.json files by QuestlineId, imports each quest, then
+// draws cross-quest arrows from quest-state requirements (questStarted: etc.)
+// that reference another quest in the same group.
 document.getElementById('import-questline-btn').addEventListener('click', function(){ elFolderInput.click(); });
 elFolderInput.addEventListener('change', function(){
   var files = Array.prototype.filter.call(elFolderInput.files, function(f){ return /\.json$/i.test(f.name); });
@@ -157,9 +137,7 @@ elFolderInput.addEventListener('change', function(){
         try{ qj = JSON.parse(String(r.result)); } catch(e){ parseError = e.message; }
         resolve({name: f.name, qj: qj, parseError: parseError});
       };
-      // Without this, a file the OS can't read (permissions, a transient
-      // lock, etc.) leaves its promise forever unresolved, which hangs
-      // Promise.all and silently stalls the whole import with no feedback.
+      // Resolve on read errors too, or Promise.all never settles.
       r.onerror = function(){
         resolve({name: f.name, qj: null, readError: (r.error && r.error.message) || 'could not be read'});
       };
@@ -194,12 +172,7 @@ elFolderInput.addEventListener('change', function(){
 
       var idByQuestId = {}; // sibling questId -> its Pages[0] internal page id, filled in after each build
       var builtByQuestId = {};
-      // One bad member (an unexpected shape buildQuestFromJson doesn't
-      // handle, or a failed save) used to throw out of this forEach and
-      // silently abort every quest after it in the same folder — that's
-      // almost certainly what happened if some quests in a questline
-      // import land and later ones just don't: isolate each member so one
-      // failure only skips that one file and everything else still runs.
+      // Isolate each member so one failure skips only that file.
       members.forEach(function(m){
         try{
           var built = buildQuestFromJson(m.qj);

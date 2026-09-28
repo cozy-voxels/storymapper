@@ -1,42 +1,22 @@
 /* ================= quest validation (QuestLines mod format) =================
 
-   This is a JavaScript port of the validation logic behind QuestLines
-   Core's in-game `/ql validate` admin command, decompiled from
-   questlines-core-1.15.1.jar (net.evilcraft.questlines.validator.*) and
-   manually translated so a quest can be checked here, offline, before
-   ever touching a live server.
+   A JavaScript port of QuestLines Core's `/ql validate` command, rebuilt
+   from decompiled questlines-core-1.15.1.jar
+   (net.evilcraft.questlines.validator.*) so quests can be checked offline.
 
-   All credit for the actual validation rules -- every requirement/action
-   syntax check, every warning heuristic -- belongs to the QuestLines
-   Core mod and its author, RedStoner. Nothing here is an original design;
-   it is a repurposing of that mod's own logic for use inside StoryMapper,
-   adapted to this app's data model (see below), not a copy of its source
-   (the mod's source is not published; this was rebuilt from decompiled
-   bytecode).
+   All credit for the validation rules belongs to the QuestLines Core mod
+   and its author, RedStoner. This adapts that logic to StoryMapper's data
+   model; it is not a copy of the (unpublished) source.
 
-   Deliberate differences from the live mod:
-   - The mod's NpcConfigValidator/AchievementValidator/EventConfigValidator/
-     WaveArenaValidator (NPC registry, achievements, events, wave arenas)
-     are out of scope -- StoryMapper doesn't model any of that data, only
-     quests. Only the quest/page/response logic (PageLogicValidator and
-     its RequirementValidator/ActionValidator/TrackingTagValidator
-     sub-checks) is ported.
-   - The mod validates its already-loaded, already-typed Quest/Page/
-     Response objects. This validates the same JSON shape this app's own
-     exporter (quest-json-export.js) produces -- i.e. it checks exactly
-     what "Export" would actually write, which is also why an unfinished,
-     hand-authored quest's prose action lines show up as "unrecognised
-     action" warnings: that prose isn't real QuestLines syntax yet, same
-     as if it had been typed directly into a real quest file.
-   - Dialog/Name/Description/etc. are LocalizedText (per-locale maps) in
-     the mod; this app only ever stores a single plain string per field,
-     so the per-locale format/coverage checks (locale key format,
-     "supported locale" list, "prefix differs across locales") don't
-     apply and are simplified to a single required/non-empty check.
-   - There is no server-side type registry here for custom requirements/
-     actions from other plugins, so (unlike the live mod) an unrecognised
-     type always produces a warning rather than possibly being silently
-     accepted as a known custom type. */
+   Differences from the mod:
+   - Only quest/page/response checks are ported (PageLogicValidator and its
+     Requirement/Action/TrackingTag sub-validators). NPC, achievement,
+     event and wave-arena validators are out of scope.
+   - It validates the JSON that Export would write, so prose action lines
+     in unfinished quests warn as unrecognised.
+   - Text fields are plain strings here, not per-locale maps, so locale
+     checks become a single non-empty check.
+   - There's no registry of custom types, so unrecognised types always warn. */
 
 import { ValidationReport } from './validation-report.js';
 import { validateRequirement, validateRequirementList } from './requirement-validator.js';
@@ -52,13 +32,9 @@ function anyStartsWith(values, prefixLc){
   return !!values && values.some(function(v){ return v && v.toLowerCase().indexOf(prefixLc) === 0; });
 }
 
-/* Ported from PageLogicValidator.findExternallyDrivenQuests/scanForQuestIds,
-   simplified to scan each OTHER quest's whole text content for a bare
-   token matching this quest's id, rather than field-by-field -- the
-   token-matching itself (split on anything that isn't part of an id) is
-   unchanged, just applied to one combined blob per quest instead of each
-   field separately. Good enough to answer the one question it's used
-   for here: "does anything else in the project reference this quest?" */
+/* Port of PageLogicValidator.findExternallyDrivenQuests/scanForQuestIds,
+   simplified to token-match this quest's id against each other quest's
+   combined text. Answers "does anything else reference this quest?" */
 function isExternallyDriven(questId, allQuests){
   if(!allQuests) return false;
   var ids = allQuests;
@@ -143,12 +119,9 @@ function validatePage(questId, pageId, page, questPageIds, report){
   return summary;
 }
 
-/* Validates one quest, in isolation, against the same rules `/ql validate`
-   applies to its Pages/PageData -- see the attribution note above.
-   `quest` is a StoryMapper quest record (state/store.js shape); `allQuests`
-   is the full `store.quests` map, used only to tell a legitimate
-   state-holder quest (referenced by another quest's Requirements/Actions)
-   apart from a genuinely orphaned one. Returns a ValidationReport. */
+/* Validates one StoryMapper quest record. `allQuests` (store.quests) is
+   only used to tell a state-holder quest that others reference from an
+   orphaned one. Returns a ValidationReport. */
 export function validateQuest(quest, allQuests){
   var report = new ValidationReport();
   var qlJson = serializeQuestToJson(quest);

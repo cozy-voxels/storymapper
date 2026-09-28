@@ -1,6 +1,5 @@
-/* A tiny pub/sub fired after every top-level view change (library, world,
-   world item, quest, questline) once `state` reflects the new view. Only
-   the read-only viewer's hash router listens; in the editor it's a no-op. */
+/* Pub/sub fired after each top-level view change, once `state` is updated.
+   Used by the viewer's hash router and library reorder mode. */
 var listeners = [];
 
 export function onViewChange(fn){

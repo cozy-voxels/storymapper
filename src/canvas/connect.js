@@ -22,8 +22,7 @@ export function stopConnecting(){
   elViewport.classList.remove('connecting');
 }
 
-/* While dragging, the wire always leaves from the exact handle the user
-   grabbed (fromSide is fixed at drag-start, never re-guessed). */
+/* The wire leaves from the handle grabbed at drag start. */
 export function updateTempWire(clientX, clientY){
   if(!connecting) return;
   var from = pageById(connecting.fromId);
@@ -37,14 +36,8 @@ export function updateTempWire(clientX, clientY){
   elTempWire.setAttribute('d', d);
 }
 
-/* When the drop isn't precisely on a handle (its hit area is small, and a
-   neighboring card placed close by can sit on top of it), fall back to
-   whichever side's anchor point — top, left, or right — the drop is
-   actually nearest to, rather than only ever guessing left/right by which
-   horizontal half of the card it landed in. That old left/right-only
-   guess meant a drop aimed at the top handle but landed a few pixels off
-   would silently connect to a side instead, with no feedback that
-   anything other than "top" had happened. */
+/* For drops not on a handle: the side (top, left or right) whose anchor
+   is nearest the drop point. */
 export function nearestSide(page, worldX, worldY){
   var top = anchorPoint(page, 'top');
   var left = anchorPoint(page, 'left');

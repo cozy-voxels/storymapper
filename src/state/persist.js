@@ -2,10 +2,7 @@ import { state, loadStore, saveStore } from './store.js';
 import { elQuestPill, elSaveStatus } from '../dom.js';
 import { READ_ONLY } from '../mode.js';
 
-/* Writes state.pages/connections/trash back into a single quest's
-   record in the store. Used both for plain single-quest mode and,
-   tagged per source quest, when splitting a merged questline view
-   back apart on save. */
+/* Saves state.pages/connections/trash into the open quest's store record. */
 export function persistCurrentQuest(){
   if(READ_ONLY) return;
   var store = loadStore();
@@ -15,10 +12,7 @@ export function persistCurrentQuest(){
     name: state.questName,
     questlineId: state.questlineId,
     status: existingQuest ? existingQuest.status : undefined,
-    // Description/Repeatable/Rewards/Requirements (real QuestLines quest
-    // metadata, carried through from JSON import -- see buildQuestFromJson)
-    // have no canvas/editor UI of their own yet, so a canvas edit's save
-    // must preserve whatever was already stored rather than dropping it.
+    // Quest metadata from JSON import has no editor UI yet; keep what's stored.
     description: existingQuest && existingQuest.description,
     repeatable: existingQuest && existingQuest.repeatable,
     rewards: existingQuest && existingQuest.rewards,
@@ -38,11 +32,8 @@ export function persistCurrentQuest(){
   flashSaved();
 }
 
-/* Splits the merged canvas state (pages/connections/trash tagged with
-   ._questId) back into each member quest's own record, then saves.
-   Connections tagged ._cross are questline-level data (span two
-   different member quests) and are routed to the questline's own
-   record instead of any single quest's. */
+/* Splits the merged questline canvas back into each member quest's record
+   (by ._questId). ._cross connections are saved on the questline record. */
 export function persistCurrentQuestline(){
   if(READ_ONLY) return;
   var store = loadStore();
@@ -51,13 +42,9 @@ export function persistCurrentQuestline(){
     if(c.label) out.label = c.label;
     return out;
   });
-  // Each member quest's OWN record re-anchors its pages near the origin
-  // (see below) so opening that quest alone doesn't start off past the
-  // visible canvas — which means the block's actual position on the
-  // shared questline canvas, e.g. where the user dragged its section box
-  // to, has to be captured here separately or it's lost the moment this
-  // save normalizes it away. Recorded per member, on the questline itself,
-  // and fed back into layoutQuestlineSections() on the next open.
+  // Member pages are re-anchored near the origin below, so save each
+  // section's questline-canvas position separately for
+  // layoutQuestlineSections() to restore.
   var sectionPositions = {};
   state.questlineMembers.forEach(function(m){
     var memberPages = state.pages.filter(function(p){ return p._questId === m.questId; });
@@ -76,18 +63,9 @@ export function persistCurrentQuestline(){
     var pageIds = {};
     memberPages.forEach(function(p){ pageIds[p.id] = true; });
     var connections = state.connections.filter(function(c){ return !c._cross && pageIds[c.from] && pageIds[c.to]; });
-    // layoutQuestlineSections() stacks every member's pages one block
-    // below the next on the shared whole-questline canvas, so by the time
-    // a quest lower in the stack gets here its pages' x/y can be
-    // thousands of pixels down. Saving that as-is into this quest's OWN
-    // record used to bake the questline-wide offset in permanently — and
-    // since opening a single quest always starts the camera at the same
-    // fixed default pan, that quest's cards would sit off past the
-    // visible canvas: it would *look* empty even though the pages were
-    // all still there in storage. Re-anchor a copy near the origin instead
-    // (a plain shift, so each quest's own internal layout is unaffected)
-    // and leave the live, still-on-screen state.pages objects untouched so
-    // this doesn't visibly reposition anything mid-edit.
+    // On the questline canvas, lower sections can sit thousands of pixels
+    // down. Save a copy shifted near the origin so the quest opens on its
+    // own in view. The live state.pages are left in place.
     var minX = Infinity, minY = Infinity;
     memberPages.forEach(function(p){
       if(p.x < minX) minX = p.x;
@@ -107,9 +85,7 @@ export function persistCurrentQuestline(){
       name: existing.name || m.name,
       questlineId: state.activeQuestlineId,
       status: existing.status,
-      // See persistCurrentQuest -- same preserve-what-was-already-stored
-      // reasoning, since this quest's own metadata isn't touched by
-      // anything the whole-questline canvas view can edit.
+      // Keep stored metadata (see persistCurrentQuest).
       description: existing.description,
       repeatable: existing.repeatable,
       rewards: existing.rewards,
@@ -142,7 +118,6 @@ export function persistCurrent(){
 
 var autosaveTimer = null;
 export function scheduleAutosave(){
-  // The read-only viewer never saves anything (see mode.js).
   if(READ_ONLY) return;
   if(!state.questId && !state.activeQuestlineId) return;
   if(autosaveTimer) clearTimeout(autosaveTimer);
@@ -152,13 +127,8 @@ export function scheduleAutosave(){
   }, 600);
 }
 
-/* Cancels a pending autosave without running it — used when a view switch
-   (to the library or to the world section) needs to flush the CURRENT
-   state via persistCurrent() itself rather than let a stale scheduled
-   autosave fire later. Exists as an exported function rather than a bare
-   module-level variable because autosaveTimer, unlike `state`, is plain
-   module-local mutable data — other modules can't reassign an imported
-   binding directly, only call back into this module to do it. */
+/* Cancels a pending autosave. Used when a view switch flushes state
+   itself, so a stale autosave doesn't fire later. */
 export function cancelAutosave(){
   if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
 }

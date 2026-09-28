@@ -5,18 +5,14 @@ import { validateQuest } from './quest-validator.js';
 import { openEditor } from '../editor/modal.js';
 
 /* ================= validate quest (UI) =================
-   Manually triggered only -- never run automatically on save or import,
-   since a quest is expected to spend most of its life as prose that
-   isn't real QuestLines syntax yet (see quest-validator.js's attribution
-   note for what's actually being checked and why). */
+   Manual only, since drafts are mostly prose that won't validate yet. */
 
 function countBadge(level, count){
   return count ? '<span class="validate-count ' + level + '">' + count + ' ' + level + (count === 1 ? '' : 's') + '</span>' : '';
 }
 
-/* Pulls the pageId back out of a path like
-   `quest[slug].PageData.some_page.Responses[0].Actions[1]` -- undefined for
-   issues that aren't scoped to a particular page (e.g. `quest[slug].Title`). */
+/* pageId from a path like `quest[slug].PageData.some_page.Responses[0]`,
+   or undefined for quest-level issues. */
 function pageIdFromPath(path){
   var m = /\.PageData\.([^.]+)/.exec(path || '');
   return m ? m[1] : undefined;
@@ -52,7 +48,7 @@ function renderReport(report){
 }
 
 if(elValidateQuestBtn) elValidateQuestBtn.addEventListener('click', function(){
-  if(!state.questId) return; // only meaningful for a single open quest, not a merged questline view
+  if(!state.questId) return; // single quest only
   var store = loadStore();
   var stored = store.quests[state.questId] || {};
   var quest = {
@@ -63,7 +59,7 @@ if(elValidateQuestBtn) elValidateQuestBtn.addEventListener('click', function(){
     repeatable: stored.repeatable,
     rewards: stored.rewards,
     requirements: stored.requirements,
-    pages: state.pages, // live, unsaved edits included -- not read back from storage
+    pages: state.pages, // includes unsaved edits
   };
   var report = validateQuest(quest, store.quests);
   renderReport(report);

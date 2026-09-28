@@ -1,10 +1,6 @@
 /* ================= read-only viewer entry (view/index.html) =================
-   Loads the data.json published next to the page and shows it with the
-   same library/canvas/world code as the editor, minus every module that
-   creates, imports, edits, or deletes anything (the editor modal, card
-   dragging/connecting, trash, file import, validation). Nothing is ever
-   saved -- see setPublishedStore() in state/store.js and READ_ONLY in
-   mode.js -- apart from the theme preference. */
+   Loads the adjacent data.json and shows it with the editor's view code,
+   leaving out every editing module. Only the theme preference is saved. */
 import '../styles/theme.css';
 import '../styles/base.css';
 import '../styles/canvas.css';

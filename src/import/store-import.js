@@ -4,12 +4,8 @@ import { cancelAutosave, flashStatus } from '../state/persist.js';
 import { isStorymapperExport } from './storymapper-export.js';
 
 /* ================= full-store import =================
-   Restores an "Export all data" file (see exportAllData) by replacing
-   EVERYTHING in this browser's store with it -- a backup restore, not a
-   merge, so its page/connection ids, layouts and cross-quest arrows come
-   back exactly as exported. After saving, the page reloads so boot()
-   re-seeds the id counters and in-memory state from the restored store
-   rather than this module hand-resetting every piece of `state`. */
+   Restores an "Export all data" file by replacing the whole store (no
+   merge), then reloads so boot() rebuilds state from it. */
 export function replaceStoreFromExport(obj){
   cancelAutosave();
   var store = ensureStoreShape(obj);
@@ -21,12 +17,8 @@ export function replaceStoreFromExport(obj){
   return true;
 }
 
-// window.confirm() is silently suppressed in this sandboxed context, so
-// this uses the same arm-then-confirm pattern as confirmDangerClick in
-// library-view.js: the first click only arms the menu item (and keeps the
-// Options menu open by stopping the click before its close-on-item-click
-// handler), and only a second click on the still-armed item opens the
-// file picker.
+// Arm-then-confirm (see confirmDangerClick in library-view.js). The arming
+// click is stopped so the Options menu stays open.
 var armedTimer = null;
 function resetArmed(){
   if(!elImportStoreBtn) return;

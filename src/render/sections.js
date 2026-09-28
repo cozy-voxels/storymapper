@@ -1,11 +1,8 @@
 import { state } from '../state/store.js';
 import { cardEl, CARD_W } from './cards.js';
 
-/* Visual-only section boxes for the whole-questline canvas view: one
-   labeled, dashed rectangle per member quest, tightly wrapping that
-   quest's cards. Recomputed from the live DOM on every render, so it
-   stays accurate as cards move or resize — not draggable as a group
-   (that's a later stage), purely a visual grouping aid for now. */
+/* Whole-questline view: one labeled box per member quest, sized from the
+   live DOM on every render. Dragging is handled in drag.js. */
 export function renderSections(){
   var elSections = document.getElementById('sections-layer');
   if(!elSections) return;

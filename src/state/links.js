@@ -1,19 +1,11 @@
 /* ================= story <-> world links =================
-   A quest page can carry linkedNpcIds/linkedLocationIds (see
-   src/ui/entity-picker.js), added directly on the page objects in
-   quest.pages[]. These two helpers read that data back out from the two
-   directions the app needs it: which quests reference a given World item
-   (for that item's own page), and which World items a given set of pages
-   references in total (for the Story-side canvas panel). Nothing here is
-   persisted redundantly -- both are computed fresh from the store every
-   time, so the two sides can never drift out of sync. */
+   Pages store linkedNpcIds/linkedLocationIds. These helpers look the links
+   up in both directions, computed fresh from the store each time. */
 import { compareNames } from '../utils/text.js';
 
 var LINKED_ID_FIELD = {npcs: 'linkedNpcIds', locations: 'linkedLocationIds'};
 
-/* Trashed quests already live in store.trashedQuests instead of
-   store.quests (see library-view.js's trash-move), so iterating
-   store.quests here already excludes them without any extra filtering. */
+/* Trashed quests aren't in store.quests, so they're excluded. */
 export function questsLinkingToWorldItem(store, category, itemId){
   var field = LINKED_ID_FIELD[category];
   if(!field) return [];
@@ -27,12 +19,8 @@ export function questsLinkingToWorldItem(store, category, itemId){
   return results;
 }
 
-/* The full set of NPCs/Locations linked from any of the given pages
-   (typically state.pages for the quest currently open on the canvas),
-   deduped across pages -- the same NPC tagged on five pages in one quest
-   still shows up once. Dangling ids (pointing at a since-deleted World
-   item) are left in the page data untouched but simply have nothing to
-   render here. */
+/* Deduped NPCs/Locations linked from the given pages. Ids of deleted
+   World items are skipped. */
 export function linkedWorldItemsForPages(pages, store){
   var ids = {npcs: [], locations: []};
   (pages || []).forEach(function(p){

@@ -1,7 +1,5 @@
 /* ================= cached DOM element references =================
-   Every element looked up once at module load time and reused everywhere
-   else in the app, exactly mirroring the original single-script's
-   top-level `var elXxx = document.getElementById(...)` declarations. */
+   Looked up once at module load. */
 
 export var elWorld = document.getElementById('world');
 export var elCardsLayer = document.getElementById('cards-layer');

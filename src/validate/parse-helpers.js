@@ -28,9 +28,7 @@ export function isNonNegativeInteger(s){
   return isInteger(s) && parseInt(s, 10) >= 0;
 }
 
-// A coordinate accepts a bare number OR a `~`/`~offset` relative form
-// (an empty offset after `~` means "unchanged", same as the real command
-// syntax for tp/setMarker/moveCitizen/etc.).
+// A number, or `~` / `~offset` for relative (bare `~` means unchanged).
 export function isCoord(s){
   if(s === null || s === undefined) return false;
   var body = s.charAt(0) === '~' ? s.slice(1) : s;

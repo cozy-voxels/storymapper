@@ -2,19 +2,14 @@ import { state } from '../state/store.js';
 import { serializeResponses } from '../utils/text.js';
 
 /* ================= JSON quest import (QuestLines mod format) =================
-   Imports the real quest JSON files under QuestLines/quests (including
-   questline subfolders), as opposed to the hand-authored draft .md tables.
-   Field text is carried over literally,
-   including the game's {#hex}/{b}/{i} inline formatting codes — the app
-   doesn't yet know how to render those (only markdown-style bold/italic
-   and {TBD} placeholders), so they'll show as raw text for now. */
+   Imports quest JSON files from QuestLines/quests. Field text, including
+   {#hex}/{b}/{i} formatting codes, is copied as-is. */
 
 function jsonLinesToBr(s){
   return String(s).replace(/[ \t]*(?:\r\n|\r|\n)[ \t]*/g, '<br>');
 }
 
-/* Finds every `page:<id>` action in an actions array — that's the real
-   same-quest dialogue jump, distinct from the Pages array's listed order. */
+/* Returns the target ids of `page:<id>` actions (same-quest dialogue jumps). */
 export function findPageRefs(actionsArr){
   var refs = [];
   (actionsArr || []).forEach(function(a){
@@ -24,9 +19,8 @@ export function findPageRefs(actionsArr){
   return refs;
 }
 
-/* Finds every quest-state gate (questStarted:/questCompleted:/etc.) in a
-   requirements array that points at a DIFFERENT quest — used to auto-draw
-   cross-quest connections when importing a whole questline folder. */
+/* Returns quest-state requirements (questStarted:/questCompleted:/etc.),
+   used to draw cross-quest arrows on questline folder import. */
 export function findQuestStateRefs(reqsArr){
   var refs = [];
   (reqsArr || []).forEach(function(r){
@@ -36,12 +30,10 @@ export function findQuestStateRefs(reqsArr){
   return refs;
 }
 
-/* Builds {pages, connections} from one parsed quest JSON object. Pages are
-   NOT laid out here (x/y stay 0) — the caller decides layout, since a
-   re-import needs to preserve existing positions rather than reflow
-   everything. Connections ARE built here since they don't depend on
-   layout, following page: action references with a sequential fallback
-   for any page that page: never reaches (so nothing is left floating). */
+/* Builds {pages, connections} from a parsed quest JSON. Pages are not laid
+   out (x/y = 0); the caller handles layout so re-imports keep positions.
+   Connections follow page: actions, with a sequential fallback for pages
+   that have none. */
 export function buildQuestFromJson(qj){
   var pageIds = (qj.Pages && qj.Pages.length) ? qj.Pages.slice() : Object.keys(qj.PageData || {});
   var idByPageId = {};
@@ -65,11 +57,8 @@ export function buildQuestFromJson(qj){
     if(pd.Requirements && pd.Requirements.length) fields.push({key: 'Requirements', value: pd.Requirements.join('<br>')});
     if(pd.Objectives && pd.Objectives.length) fields.push({key: 'Objectives', value: pd.Objectives.join('<br>')});
     if(pd.LoadActions && pd.LoadActions.length) fields.push({key: 'LoadActions', value: pd.LoadActions.join('<br>')});
-    // Two real, if rare, page flags that predate this tool and aren't in
-    // ql_data-models.md's schema table (only in QUEST_GUIDE.md's prose, or
-    // not documented at all) -- always `true` when present in every real
-    // quest file seen so far, never `false`, so a plain 'true' marker field
-    // round-trips them without needing a dedicated boolean field type.
+    // Rare, mostly undocumented flags. They only ever appear as `true`, so a
+    // 'true' marker field is enough to round-trip them.
     if(pd.AutoTrigger) fields.push({key: 'AutoTrigger', value: 'true'});
     if(pd.RequiresResponse) fields.push({key: 'RequiresResponse', value: 'true'});
     page.fields = fields;
@@ -79,10 +68,7 @@ export function buildQuestFromJson(qj){
   var touched = {};
   pages.forEach(function(page){
     var pd = (qj.PageData && qj.PageData[page.pageId]) || {};
-    // Track which response (if any) produced each page: ref, so the arrow
-    // can be labeled with it — a card with two responses that lead to two
-    // different pages otherwise draws two unlabeled arrows with no way to
-    // tell which choice goes where.
+    // Label each arrow with the response that produced it, if any.
     var refs = findPageRefs(pd.LoadActions).map(function(toPid){
       return {toPid: toPid, label: null};
     });
@@ -103,35 +89,26 @@ export function buildQuestFromJson(qj){
       touched[toId] = true;
     });
   });
-  // Fallback: a page that page: never reaches or leaves would otherwise be
-  // stranded with no arrows at all — connect it to the next page in the
-  // Pages array's listed order, same as the .md importer does for every page.
+  // Fallback: connect a page with no page: arrows to the next page in
+  // Pages order, as the .md importer does.
   pages.forEach(function(page, idx){
     if(touched[page.id]) return;
     var next = pages[idx + 1];
     if(next) connections.push({id: 'w' + (state.nextConnId++), from: page.id, to: next.id, fromSide: 'right', toSide: 'left'});
   });
 
-  // IMPORTANT: `pages` stays in the source JSON's own Pages order here --
-  // that order is the mod's actual page-*priority* list (pages are
-  // evaluated top to bottom and the first whose Requirements all pass
-  // wins, per QUEST_GUIDE.md), not narrative/story order, and export
-  // needs to reproduce it exactly for correct in-game behavior. A
-  // separate flow-ordered copy is computed below purely so the caller's
-  // initial grid layout reads left-to-right/top-to-bottom the way the
-  // quest is actually played, without disturbing the order that gets
-  // stored and re-exported.
+  // IMPORTANT: `pages` keeps the source Pages order. It's the mod's
+  // evaluation priority (first page whose Requirements pass wins), and
+  // export must reproduce it. layoutOrder is a flow-ordered copy used only
+  // for the initial grid layout.
   var layoutOrder = orderPagesByFlow(pages, connections);
 
   return {pages: pages, layoutOrder: layoutOrder, connections: connections, meta: {description: qj.Description, repeatable: !!qj.Repeatable, rewards: qj.Rewards, requirements: qj.Requirements}};
 }
 
-/* Reorders pages by walking outgoing page: connections breadth-first from
-   the page(s) with no incoming connection (the entry point(s)) — used so
-   layoutPages(), which places pages into its grid in array order, follows
-   the actual dialogue flow rather than the source JSON's listed order.
-   Anything a cycle or missing root leaves unreachable keeps its original
-   relative order, appended after the main flow rather than dropped. */
+/* Orders pages breadth-first from the entry pages (no incoming arrows) so
+   layoutPages() follows the dialogue flow. Unreachable pages are appended
+   in their original order. */
 export function orderPagesByFlow(pages, connections){
   var outgoing = {}, incoming = {}, byId = {};
   pages.forEach(function(p){ outgoing[p.id] = []; incoming[p.id] = 0; byId[p.id] = p; });
@@ -140,7 +117,7 @@ export function orderPagesByFlow(pages, connections){
     if(incoming[c.to] !== undefined) incoming[c.to]++;
   });
   var roots = pages.filter(function(p){ return incoming[p.id] === 0; });
-  if(!roots.length && pages.length) roots = [pages[0]]; // every page has an incoming arrow (a cycle) — no true start, so just pick one
+  if(!roots.length && pages.length) roots = [pages[0]]; // all pages in a cycle: start from the first
   var visited = {}, ordered = [];
   function bfs(startId){
     var queue = [startId];

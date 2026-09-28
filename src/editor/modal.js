@@ -13,11 +13,8 @@ import { refreshLinkedItemsPanelIfOpen } from '../canvas/linked-items-panel.js';
 
 /* ================= edit modal ================= */
 
-/* These five always get their own fixed textarea row in the editor,
-   matching the PageData model fields (see ql_data-models.md). Response(s)
-   is also fixed but gets its own structured row-list UI below instead of
-   a single textarea (see responseRow()/RESPONSE_KEYS). Everything else on
-   a page stays freeform under "Other Fields". */
+/* PageData fields with a fixed textarea row. Response(s) has its own row
+   UI (see responseRow()). Anything else goes under "Other Fields". */
 var FIXED_FIELD_DEFS = [
   {match: ['dialog'], canonical: 'Dialog', el: 'modal-dialog'},
   {match: ['journaltext'], canonical: 'JournalText', el: 'modal-journaltext'},
@@ -34,11 +31,8 @@ function isFixedKey(key){
   return FIXED_FIELD_DEFS.some(function(def){ return def.match.indexOf(lower) > -1; });
 }
 
-/* Recomputed from the modal's own live values (not the last-saved page) so
-   a name typed just now shows up as a suggestion immediately, without
-   requiring a save first. Includes the title and freeform "Other Fields"
-   rows too, not just the six fixed fields -- a name can be mentioned
-   anywhere on the page. */
+/* Suggestions come from the modal's current values (all fields, including
+   the title), so they update without saving. */
 function currentDraftPage(){
   var fields = FIXED_FIELD_DEFS.map(function(def){
     return {key: def.canonical, value: textToBr(document.getElementById(def.el).value)};
@@ -75,9 +69,7 @@ elModalSuggestedLinks.addEventListener('click', function(e){
   addEntityLink(btn.dataset.category, btn.dataset.id);
 });
 
-/* Any input inside the modal can affect suggestions now -- title and the
-   freeform "Other Fields" rows are scanned too, not just the six fixed
-   fields -- so no target filtering here beyond "inside the modal". */
+/* Any modal input can change suggestions. */
 var suggestDebounceTimer = null;
 elModal.addEventListener('input', function(e){
   if(e.target.tagName === 'TEXTAREA') autoSizeTextarea(e.target);
@@ -98,10 +90,8 @@ function fieldRow(key, value){
   return row;
 }
 
-/* One Response(s) block: the choice text, plus two optional sub-sections
-   (Requirement(s)/Action(s), each a newline-per-item textarea) toggled on
-   by their own "+ Add" button -- mirrors the real QuestLines Response
-   shape (Text/Requirements/Actions), see parseResponses()/serializeResponses(). */
+/* One response row: text plus optional Requirement(s)/Action(s)
+   textareas (one item per line), each added with "+ Add". */
 function responseRow(resp){
   resp = resp || {text: '', requirements: [], actions: []};
   var row = document.createElement('div');
@@ -213,12 +203,8 @@ export function openEditor(cardId){
     elModalFieldsList.appendChild(fieldRow(f.key, f.value));
   });
 
-  // Every textarea just populated above was built (and auto-sized) while
-  // detached from the document -- scrollHeight reads 0/wrong on a detached
-  // node, so the resulting height is always the collapsed min-height no
-  // matter how much text it holds. Re-run auto-size now that they're all
-  // actually in the (now-visible) modal, so long content shows in full
-  // instead of silently clipping with a hidden scrollbar.
+  // Re-run auto-size now that the textareas are attached; scrollHeight
+  // is 0 on detached nodes.
   elModal.querySelectorAll('textarea').forEach(autoSizeTextarea);
 
   initEntityPickers(page, refreshSuggestions);

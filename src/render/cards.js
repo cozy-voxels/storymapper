@@ -65,8 +65,7 @@ export function buildCardEl(page){
   html += '    <div class="card-name">' + formatCardTitle(page.title) + '</div>';
   html += '    <div class="card-pageid">' + escapeHtml(page.pageId) + '</div>';
   html += '  </div>';
-  // The read-only viewer can't connect, edit, or copy pages, so it gets
-  // neither the connection handles nor the edit/copy buttons.
+  // No handles or edit/copy buttons in the read-only viewer.
   if(!READ_ONLY){
     html += '  <div class="handle handle-top" data-side="top" tabindex="0" title="Drag to connect"></div>';
     html += '  <div class="handle handle-left" data-side="left" tabindex="0" title="Drag to connect"></div>';
@@ -106,30 +105,23 @@ export function cardEl(id){
   return elCardsLayer.querySelector('.card[data-id="' + id + '"]');
 }
 
-/* Soft delete: the page moves to state.trash instead of being discarded,
-   so a deletion is always recoverable. Its connections are dropped (a
-   restored page comes back unattached, on purpose — reattaching after
-   other things may have changed is the user's call, not ours to guess). */
+/* Soft delete: moves the page to state.trash and drops its connections.
+   Restored pages come back unconnected. */
 export function removePage(id){
   var page = pageById(id);
   if(!page) return;
   state.pages = state.pages.filter(function(p){return p.id !== id;});
   state.connections = state.connections.filter(function(c){return c.from !== id && c.to !== id;});
   var entry = {page: page, deletedAt: Date.now()};
-  // in a whole-questline view, carry the page's source-quest tag onto the
-  // trash entry too, so persistCurrentQuestline() can still attribute it
-  // back to the right quest when splitting the merged state on save
+  // keep _questId so persistCurrentQuestline() saves it to the right quest
   if(page._questId) entry._questId = page._questId;
   state.trash.push(entry);
   state.selectedCardIds.delete(id);
   renderAll();
 }
 
-/* Copies a single page in place: new page id off the same global counter
-   as everything else, pageId suffixed "-copy" so it doesn't collide with
-   the original, and all other data (fields, linked NPCs/locations, quest/
-   questline attribution) carried over -- but never connections, since a
-   copy isn't wired into the diagram the way the original is. */
+/* Duplicates a page with a new id and a "-copy" pageId. Connections are
+   not copied. */
 export function duplicatePage(id){
   var page = pageById(id);
   if(!page) return;
@@ -147,9 +139,8 @@ export function duplicatePage(id){
 }
 
 /* ---- card "More"/"Less" expand toggle ----
-   The edit/copy buttons' handler lives in editor/modal.js instead, so the
-   read-only viewer (which never loads the editor) can import this module
-   without pulling the editor modal in along with it. */
+   The edit/copy handler is in editor/modal.js so the viewer can import
+   this module without the editor. */
 elCardsLayer.addEventListener('click', function(e){
   var toggle = e.target.closest('.expand-toggle');
   if(toggle){

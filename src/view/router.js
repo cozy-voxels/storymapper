@@ -1,13 +1,12 @@
 /* ================= read-only viewer: hash routes =================
-   Makes every view in the viewer linkable and back/forward-able:
+   Gives every viewer view a URL:
      #/story                    the Story library
      #/quest/<id>               one quest's canvas
      #/questline/<id>           a whole questline's canvas
      #/world                    the World directory
      #/world/<category>/<id>    one Faction/NPC/Location
-   The hash follows the app (via view-events.js, fired after every view
-   change) and the app follows the hash (on hashchange). An unknown or
-   malformed route falls back to the Story library. */
+   View changes update the hash, and hashchange updates the view. Unknown
+   routes fall back to the Story library. */
 import { state, loadStore } from '../state/store.js';
 import { onViewChange } from '../state/view-events.js';
 import { showLibraryView } from '../views.js';
@@ -26,8 +25,7 @@ function routeFromState(){
   return '#/story';
 }
 
-// While a route is being applied, the resulting view change only
-// normalizes the URL in place rather than adding another history entry.
+// While applying a route, replace the URL instead of pushing history.
 var applying = false;
 
 function applyRoute(hash){

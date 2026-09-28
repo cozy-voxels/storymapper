@@ -8,11 +8,7 @@ import '../styles/validate.css';
 
 import { state, loadStore } from './state/store.js';
 
-// Each of these modules attaches its own top-level event listeners as a
-// side effect of being imported, exactly mirroring the original single
-// <script>'s top-to-bottom execution — importing them here (in roughly
-// the same order the original code defined them) is what wires up the
-// whole app.
+// These modules attach their event listeners on import.
 import './utils/text.js';
 import './import/markdown-import.js';
 import './import/quest-json-import.js';
@@ -38,8 +34,7 @@ import { showLibraryView } from './views.js';
 /* ================= boot ================= */
 (function boot(){
   var store = loadStore();
-  // seed the global id counters once at startup; from here on they only
-  // ever move forward, mirrored into the store on every save
+  // seed the global id counters; they only increase and are saved with the store
   state.nextPageId = store.nextPageId;
   state.nextConnId = store.nextConnId;
 
@@ -56,11 +51,7 @@ import { showLibraryView } from './views.js';
       loadFromMarkdown(defaultMd, {questId: 'seed-meet-the-mercs', questName: 'Meet the Mercs'});
     }
   }
-  // The app always opens on the library rather than dropping straight
-  // back into whatever quest/questline was open last session — the block
-  // above still restores that quest/questline into `state` (and seeds the
-  // default quest on a first-ever launch) so its data is loaded and
-  // available the moment it's picked from the library, but the canvas
-  // itself isn't shown until the user actually chooses something.
+  // Always open on the library. The last quest is still loaded into
+  // `state` above, but the canvas stays hidden until one is picked.
   showLibraryView();
 })();

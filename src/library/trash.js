@@ -19,12 +19,9 @@ function timeAgo(ms){
   return days + 'd ago';
 }
 
-/* Restore is one panel covering all three soft-deletable things — pages,
-   quests, and questlines — kept as separate sections rather than a merged
-   list since they restore through different code paths and a page's
-   trash only ever means "in the quest currently open" while quests and
-   questlines are store-wide. Each row carries data-type + data-index so
-   the single click handler below can route to the right restore fn. */
+/* One Restore panel with separate sections for pages (open quest only),
+   quests and questlines. Rows carry data-type + data-index for the click
+   handler. */
 export function renderTrashList(){
   var store = loadStore();
   var html = '';
@@ -85,10 +82,7 @@ export function renderTrashList(){
   document.getElementById('trash-delete-all').disabled = isEmpty;
 }
 
-// Same arm-then-confirm pattern as confirmDangerClick in library-view.js:
-// window.confirm() is silently suppressed in this sandboxed context, so
-// destructive actions instead arm the button on the first click and only
-// act on a second click on that same still-armed button.
+// Arm-then-confirm; see confirmDangerClick in library-view.js.
 var armedDeleteAllBtn = null;
 var armedDeleteAllTimer = null;
 function resetArmedDeleteAll(){
@@ -169,9 +163,7 @@ elTrashList.addEventListener('click', function(e){
     restoreQuestlineFromTrash(index);
     flashStatus('Questline restored', 1800);
   }
-  // Quest/questline restores touch the store, not the live canvas state —
-  // if the library is open behind this panel, refresh it so the restored
-  // item shows up without needing to close and reopen Restore.
+  // Refresh the library behind the panel so restored items appear.
   if(state.view === 'library') renderLibrary();
   renderTrashList();
 });

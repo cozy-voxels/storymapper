@@ -47,8 +47,7 @@ describe('buildQuestFromJson', () => {
     const built = buildQuestFromJson(qj);
 
     expect(built.pages.map((p) => p.pageId)).toEqual(['p_start', 'p_end']);
-    // The Response's own action (page:p_end) is echoed as a "— " sub-line
-    // in the Response(s) text, in addition to driving the connection below.
+    // The page:p_end action also appears as a "— " sub-line.
     expect(built.pages[0].fields).toEqual([
       { key: 'Dialog', value: 'Hello' },
       { key: 'Response(s)', value: '- Continue<br>— page:p_end' },
@@ -64,7 +63,7 @@ describe('buildQuestFromJson', () => {
       PageData: { a: { Dialog: 'A' }, b: { Dialog: 'B' }, c: { Dialog: 'C' } },
     };
     const built = buildQuestFromJson(qj);
-    // no Responses/LoadActions anywhere -> every page is untouched -> sequential fallback for all
+    // no page: actions -> sequential fallback for every page
     expect(built.connections.map((c) => [c.from, c.to])).toEqual([
       [built.pages[0].id, built.pages[1].id],
       [built.pages[1].id, built.pages[2].id],
@@ -91,9 +90,8 @@ describe('buildQuestFromJson', () => {
   });
 
   it('keeps `pages` in the source Pages order (the mod\'s real evaluation-priority order) even when it differs from narrative flow, while `layoutOrder` reflects the flow order for layout purposes', () => {
-    // Mirrors the real welcome_herald.json shape: the entry point
-    // (nothing points at it) is listed LAST in Pages, branches are listed
-    // before it -- Pages order encodes evaluation priority, not story order.
+    // Like welcome_herald.json: the entry point is listed last, since Pages
+    // order is evaluation priority, not story order.
     const qj = {
       Pages: ['branch_a', 'branch_b', 'entry'],
       PageData: {

@@ -1,16 +1,9 @@
 /* ================= entity picker (multi-select) =================
-   The page editor's "Linked NPCs" / "Linked Locations" controls: a small
-   multi-select combobox generalizing the single-select Location search
-   already built for the World section's NPC editor (see
-   src/world/world-view.js's location-search combobox) -- same
-   mousedown-to-select-before-blur-fires and Escape-to-close handling, but
-   backed by an array instead of a single {id, detail} value, and usable
-   for either category via data-category.
+   Multi-select comboboxes for the page editor's Linked NPCs / Linked
+   Locations, modeled on the Location combobox in world-view.js.
 
-   Holds its own small "working copy" of the two id arrays while the modal
-   is open (mirroring how the rest of the edit modal only writes back to
-   the real page object on Save) -- initEntityPickers()/getEntityPickerIds()
-   are the modal's read/write ends of that. */
+   Edits a working copy of the id arrays until Save:
+   initEntityPickers() loads it and getEntityPickerIds() reads it back. */
 import { loadStore } from '../state/store.js';
 import { escapeHtml, compareNames } from '../utils/text.js';
 import { elModal, elModalName } from '../dom.js';
@@ -66,9 +59,7 @@ function removeEntityLink(category, id) {
 
 function chipsHtml(store, category) {
 	var items = (store.world || {})[category] || {};
-	// A dangling id (its World item was since deleted) is left in
-	// workingIds untouched -- nothing is lost on Save -- it just renders no
-	// chip, since there's nothing useful to show or click through to.
+	// Ids of deleted World items are kept but not shown.
 	return workingIds[category].filter(function (id) { return items[id]; }).map(function (id) {
 		var name = items[id].name || 'Untitled';
 		return '<span class="entity-chip">' + escapeHtml(name) +
@@ -122,14 +113,12 @@ elModal.addEventListener('input', function (e) {
 elModal.addEventListener('focus', function (e) {
 	var picker = e.target.closest('.entity-picker');
 	if (picker && e.target.classList.contains('entity-picker-input')) showResults(picker.dataset.category);
-}, true); // focus doesn't bubble -- capture phase is required for delegation
+}, true); // capture: focus doesn't bubble
 elModal.addEventListener('focusout', function (e) {
 	var picker = e.target.closest('.entity-picker');
 	if (!picker || !e.target.classList.contains('entity-picker-input')) return;
 	var category = picker.dataset.category;
-	// Long enough for a result button's own mousedown handler (below) to run
-	// and act first -- same "blur fires before click" race the Location
-	// combobox already works around.
+	// Delay so the result mousedown handler runs first.
 	setTimeout(function () { hideResults(category); }, 150);
 });
 elModal.addEventListener('mousedown', function (e) {

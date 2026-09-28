@@ -17,10 +17,7 @@ import { notifyViewChange } from './state/view-events.js';
 
 /* ================= view switching ================= */
 
-/* "Re-arrange by flow", "Clear cross-quest arrows" and "Restore Pages" live
-   together under one "Options" menu so the topbar doesn't grow a button
-   per action. The first two still hide themselves per-view exactly as
-   before (see updateTopbarForView below) — only their container moved. */
+/* Topbar "Options" menu. Some items hide per view (see updateTopbarForView). */
 function closeOptionsMenu(){
   elOptionsMenu.hidden = true;
   elOptionsBtn.setAttribute('aria-expanded', 'false');
@@ -33,8 +30,7 @@ if(elOptionsBtn && elOptionsMenu){
     elOptionsMenu.hidden = !willOpen;
     elOptionsBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   });
-  // Any item click both runs that item's own handler (attached elsewhere,
-  // unchanged) and closes the menu afterward.
+  // Close the menu after any item's own handler runs.
   elOptionsMenu.addEventListener('click', function(e){
     if(e.target.closest('.dropdown-item')) closeOptionsMenu();
   });
@@ -46,11 +42,8 @@ if(elOptionsBtn && elOptionsMenu){
   });
 }
 
-/* "+ Page" only makes sense when a single quest is open — inside a
-   whole-questline view it would be ambiguous which quest a new page
-   belongs to, so it's hidden there. (Importing a .md now lives in the
-   library, since it always creates a new standalone quest rather than
-   acting on whatever's currently open.) */
+/* "+ Page" is hidden in the whole-questline view, where the target quest
+   would be ambiguous. */
 export function updateTopbarForView(){
   var singleQuest = state.view === 'canvas' && !state.activeQuestlineId;
   var wholeQuestline = state.view === 'canvas' && !!state.activeQuestlineId;
@@ -62,8 +55,7 @@ export function updateTopbarForView(){
   if(elReorderQuestsBtn) elReorderQuestsBtn.style.display = state.view === 'library' ? '' : 'none';
   if(elNavLibraryPill) elNavLibraryPill.classList.toggle('active', state.view === 'library');
   if(elNavWorldPill) elNavWorldPill.classList.toggle('active', state.view === 'world' || state.view === 'world-item');
-  // the current-quest subheader only makes sense while something is open
-  // on the canvas — it's empty (and hidden via #quest-pill:empty) in the library and the world section
+  // quest pill is empty (and hidden via :empty) outside the canvas
   if(elQuestPill) elQuestPill.style.display = (state.view === 'library' || state.view === 'world' || state.view === 'world-item') ? 'none' : '';
 }
 
@@ -77,18 +69,14 @@ export function showCanvasView(){
 
 export function showLibraryView(){
   closeConnLabelChooser();
-  // flush whatever's on the canvas before leaving it, so a rename or
-  // edit made moments ago is reflected when the library reloads from storage
+  // save the canvas before the library reloads from storage
   if(state.questId || state.activeQuestlineId){
     cancelAutosave();
     persistCurrent();
   }
-  // Nothing is "open" on the canvas while the library is showing. This
-  // matters because the library edits the store directly (rename,
-  // assign to a questline) without touching `state` — if state.questId
-  // stayed set, the next switchToQuest/switchToQuestline would see it,
-  // re-persist this now-stale in-memory record, and clobber whatever was
-  // just changed from the library (e.g. an assignment made moments ago).
+  // Clear the open quest: the library edits the store directly, and a
+  // leftover state.questId would make the next switch overwrite those
+  // edits with stale state.
   state.questId = null;
   state.activeQuestlineId = null;
   state.view = 'library';
@@ -103,12 +91,8 @@ export function showLibraryView(){
 if(elNavLibraryPill) elNavLibraryPill.addEventListener('click', showLibraryView);
 if(elNavWorldPill) elNavWorldPill.addEventListener('click', function(){ showWorldView(); });
 
-// Bulk removal for cross-quest arrows: one-by-one deletion (select a wire,
-// click its × ) works but a questline can easily auto-draw more of these
-// than anyone wants to click through by hand. Only touches connections
-// tagged _cross — every member quest's own pages and same-quest arrows are
-// untouched, and this only exists to remove in the current whole-questline
-// view, so it's a no-op outside one.
+// Removes all _cross connections in the open questline view. No-op
+// outside one.
 if(elClearCrossBtn) elClearCrossBtn.addEventListener('click', function(){
   if(!state.activeQuestlineId) return;
   var before = state.connections.length;
@@ -121,12 +105,8 @@ if(elClearCrossBtn) elClearCrossBtn.addEventListener('click', function(){
   flashStatus('Cleared cross-quest arrows', 1800);
 });
 
-// Re-import intentionally preserves a page's existing position once it's
-// been imported once (that's what keeps hand-arranged layouts from being
-// clobbered by a routine re-import) — which means the improved,
-// arrow-following layout order only ever applies to genuinely new pages.
-// This is the explicit opt-in for applying it to an already-imported
-// quest's existing pages too, since a re-import alone won't.
+// Re-import keeps existing page positions, so flow layout only applies to
+// new pages. This re-lays out all pages of the open quest.
 if(elRelayoutBtn) elRelayoutBtn.addEventListener('click', function(){
   if(!state.questId) return;
   var ordered = orderPagesByFlow(state.pages, state.connections);

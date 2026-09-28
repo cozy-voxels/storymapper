@@ -1,36 +1,28 @@
 /* ================= state ================= */
 export var state = {
-  pages: [],         // Page (a dialog node): {id, x, y, title, pageId, fields:[{key,value}]} — "card" is only its on-canvas UI representation
+  pages: [],         // {id, x, y, title, pageId, fields:[{key,value}]}; a "card" is its on-canvas element
   connections: [],   // {id, from, to}
-  trash: [],         // soft-deleted pages: {page, deletedAt} — restorable, dropped with no connections
-  nextPageId: 1,      // global monotonic counter (lives on the store, mirrored here) — never reset on quest switch
+  trash: [],         // soft-deleted pages: {page, deletedAt}
+  nextPageId: 1,      // global counter, mirrored from the store; never reset
   nextConnId: 1,
   pan: {x: 60, y: 40},
   zoom: 1,
   selectedConn: null,
   editingCardId: null,
-  // Ephemeral multi-select for a shift-drag "temp group" move — a lasso
-  // selection, not a saved grouping like a Questline. Never persisted to
-  // the store; cleared on every quest/questline switch.
+  // Lasso selection. Not saved; cleared on quest/questline switch.
   selectedCardIds: new Set(),
   view: 'canvas',         // 'canvas' | 'library'
   questId: null,
   questName: 'Untitled Quest',
-  questlineId: null,        // a Quest may belong to a QuestLine (a group of quests) or stand alone
-  activeQuestlineId: null,  // non-null only when the canvas is showing a WHOLE questline (merged view)
-  questlineMembers: []      // [{questId, name}] — member quests of the active whole-questline view, in display order
+  questlineId: null,        // the open quest's questline, or null if standalone
+  activeQuestlineId: null,  // set only in the whole-questline view
+  questlineMembers: []      // [{questId, name}] in the whole-questline view, in display order
 };
 
 export var PRIMARY_KEYS = ['dialog', 'response(s)', 'responses'];
 
 /* ================= local persistence =================
-   Quests are stored keyed by id so this schema already supports more
-   than one saved quest, even though the UI to switch between them
-   doesn't exist yet (that's a later step) — today only one quest is
-   ever active at a time. A quest optionally belongs to a QuestLine
-   (a group of related quests); there's no UI for that grouping yet
-   either, but the field is there so quests can be tagged into one
-   later without another migration. */
+   Quests and questlines are stored by id in one localStorage record. */
 export var STORAGE_KEY = 'storymapper:quests:v1';
 export var STORAGE_KEY_OLD = 'storymapper:boards:v1';
 
@@ -42,10 +34,8 @@ export function defaultStore(){
   return {version: 2, activeQuestId: null, activeQuestlineId: null, quests: {}, questlines: {}, trashedQuests: [], trashedQuestlines: [], nextPageId: 1, nextConnId: 1, world: {factions: {}, npcs: {}, locations: {}}};
 }
 
-/* One-time migration from the pre-rename "boards" schema (cards ->
-   pages, boardId -> questId) so anyone who already autosaved under the
-   old key doesn't lose it. Global id counters and the questlines map
-   are filled in afterward by ensureStoreShape(). */
+/* Migrates the old "boards" schema (cards -> pages, boardId -> questId).
+   ensureStoreShape() fills in the rest. */
 export function migrateLegacyStore(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY_OLD);
@@ -75,18 +65,11 @@ export function migrateLegacyStore(){
   }
 }
 
-/* Repairs two data-integrity invariants that a bug elsewhere in the app
-   (or a hand-edited import) can violate: every quest's object key must
-   equal its own `.id` (a mismatch -- most concretely a key of "null" from
-   a quest record saved with `.id: null` -- makes it a member of whatever
-   questline its stale `.questlineId` happened to hold, rendering as a
-   second, uneditable "ghost" section there), and every page id must be
-   unique across the WHOLE store, not just within one quest (see the
-   nextPageId comment above -- a duplicate page id across two quests in
-   the same questline resolves to only one DOM card store-wide, so the
-   two quests' pages visually swap/hop on drag instead of moving
-   independently). Runs on every load so already-corrupted saved/imported
-   data self-heals; nothing is deleted, records just get a valid id. */
+/* Runs on every load to repair two invariants without deleting anything:
+   - each quest's key equals its .id (a "null" key shows up as a ghost
+     section in its questline)
+   - page ids are unique across the whole store (duplicates share one DOM
+     card in a questline view) */
 function repairStoreIdentity(store){
   var quests = store.quests || {};
   Object.keys(quests).forEach(function(key){
@@ -123,13 +106,9 @@ function repairStoreIdentity(store){
   });
 }
 
-/* Brings any previously-saved store up to the current schema: adds a
-   questlines map if missing, computes safe global nextPageId/nextConnId
-   counters by scanning every quest's existing page and connection ids
-   (needed because those counters used to live per-quest, which could
-   never collide since only one quest was ever shown at a time — now that
-   a whole questline can render several quests' pages together, ids must
-   be unique across the whole store), and runs repairStoreIdentity(). */
+/* Upgrades a saved store to the current schema: adds missing maps, sets
+   the global id counters above every existing id, and runs
+   repairStoreIdentity(). */
 export function ensureStoreShape(store){
   if(!store.questlines || typeof store.questlines !== 'object') store.questlines = {};
   if(typeof store.activeQuestlineId === 'undefined') store.activeQuestlineId = null;
@@ -169,12 +148,9 @@ export function ensureStoreShape(store){
   return store;
 }
 
-/* The read-only viewer's data: the raw text of its published data.json,
-   set once at boot via setPublishedStore(). While set, loadStore() reads
-   from it instead of localStorage -- re-parsed on every call, so callers
-   get a fresh copy each time exactly as they would from localStorage
-   (switchToQuestline, for one, tags and shifts the pages it loads) -- and
-   saveStore() never writes anything. */
+/* The viewer's data.json text, set at boot by setPublishedStore(). When
+   set, loadStore() parses it fresh on each call (callers mutate the result)
+   and saveStore() is a no-op. */
 var publishedRaw = null;
 
 export function setPublishedStore(raw){
@@ -196,11 +172,7 @@ export function loadStore(){
   }
 }
 
-/* Returns true on success. A quota-exceeded or private-browsing write
-   failure here used to be swallowed completely silently — callers that
-   care (currently: questline folder import) now get a false back so they
-   can tell the user their data didn't actually save, instead of it just
-   quietly not being there next time they look. */
+/* Returns false if the write fails (e.g. quota exceeded). */
 export function saveStore(store){
   if(publishedRaw !== null) return true;
   try{
@@ -212,10 +184,8 @@ export function saveStore(store){
   }
 }
 
-/* A copy of the store fit for publishing alongside the read-only viewer:
-   anything in the published data.json is publicly downloadable, so every
-   kind of trash (soft-deleted pages, quests, and questlines) is left out,
-   along with which quest/questline happened to be open in the editor. */
+/* Store copy for the public viewer: drops all trash and the open
+   quest/questline. */
 export function publishableStore(store){
   var copy = JSON.parse(JSON.stringify(store));
   Object.keys(copy.quests || {}).forEach(function(qid){
@@ -228,11 +198,8 @@ export function publishableStore(store){
   return copy;
 }
 
-/* Questlines, and quests within a questline, display in a user-set
-   order (the "Reorder quests" option in the library): each record's
-   numeric `order`, falling back to creation (object-key) order for any
-   record that has never been reordered -- those sort after every ordered
-   one, so a new or imported questline/quest lands at the end. */
+/* Sorts by each record's `order` (set by "Reorder quests"). Records
+   without one go last, in creation order. */
 function sortByOrder(ids, records){
   return ids.map(function(id, i){ return {id: id, i: i}; })
     .sort(function(a, b){

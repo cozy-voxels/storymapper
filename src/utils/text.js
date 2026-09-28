@@ -3,10 +3,8 @@ export function escapeHtml(s) {
 	return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Matches only the known style/color tags — {b} {i} {m} {/} and a 6-digit
-// {#hexcolor} — never a variable placeholder like {username},
-// {variable:max_arena2_bribe}, or {string:daily_harvesting_target}, which
-// all fail this pattern and pass through untouched.
+// Style tags only: {b} {i} {m} {/} {#hexcolor}. Variables like {username}
+// or {variable:x} don't match.
 var STYLE_TAG_RE = /\{(#[0-9a-fA-F]{6}|\/|b|i|m)\}/g;
 
 export function formatInline(raw) {
@@ -17,48 +15,28 @@ export function formatInline(raw) {
 		var t = escapeHtml(part);
 		t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 		t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
-		// Card view only: drop the {b}/{i}/{m}/{/}/{#hex} style tags so the
-		// text reads clean, same as the card title. Real variables (anything
-		// else in braces) stay in place. The edit modal's textareas show real
-		// line breaks (via brToText()) but keep everything else raw, so style
-		// tags are still there to view and edit in full.
+		// Card view drops style tags but keeps variables. The edit modal
+		// shows the raw text.
 		t = t.replace(STYLE_TAG_RE, '');
 		return t;
 	});
 	return out.join('').trim();
 }
 
-/* Card title only: strips {#hexcolor}/{b}/{/} style markup tags entirely
-   rather than showing them as {tbd} pills, so the NPC name reads clean at
-   a glance on the canvas. The edit modal's "NPC name" input reads page.title
-   directly (never through this), so the raw markup is still there to view
-   and edit in full. */
+/* Card title with style tags stripped. The edit modal uses the raw title. */
 export function formatCardTitle(raw) {
 	if (!raw) return '';
 	return escapeHtml(raw).replace(/\{[^}]+\}/g, '').trim();
 }
 
-/* Splits on <br> variants AND real line breaks -- hand-typed field values
-   (anything entered directly into a modal textarea, never round-tripped
-   through JSON import's jsonLinesToBr()) often mix literal Enter-key
-   newlines in with <br> tags, and every caller here treats each line as a
-   discrete bullet/requirement/response item, so a raw \n has to split just
-   like <br> does or two real items silently merge into one. */
+/* Splits on <br> and on real newlines, since hand-typed values mix both. */
 export function splitLines(raw) {
 	return raw.split(/<br\s*\/?>|\r\n|\r|\n/i).map(function (l) { return l.trim(); }).filter(function (l) { return l.length; });
 }
 
-/* A <textarea> shows whatever's in its .value literally -- it never
-   interprets HTML, so a field stored with the app's "<br>"-joined
-   convention shows the literal text "<br>" instead of a line break while
-   editing. brToText()/textToBr() are the display-only round trip: convert
-   to real line breaks when populating a textarea, convert back when
-   reading it out for save, so storage/export never changes shape but
-   editing shows clean multi-line text. Unlike splitLines(), these don't
-   trim or drop blank lines -- a blank line matters here (it's how a
-   paragraph break like "<br><br>" stays a paragraph break). Both also eat
-   any spaces/tabs around a line break: stored <br> tags carry no padding,
-   and older data saved as " <br> " cleans itself up on the next save. */
+/* Converts stored <br> to newlines for a textarea, and back on save.
+   Blank lines are kept (so "<br><br>" survives), and spaces around line
+   breaks are trimmed. */
 export function brToText(raw) {
 	if (!raw) return '';
 	return raw.replace(/[ \t]*<br\s*\/?>[ \t]*/gi, '\n');
@@ -69,35 +47,23 @@ export function textToBr(text) {
 	return text.replace(/[ \t]*(?:\r\n|\r|\n)[ \t]*/g, '<br>');
 }
 
-/* Top-level response lines from a page's own Response(s) field (the "— "
-   sub-lines under each one are actions/requirements, not choices) — used
-   to offer response text as a connection label while hand-drawing a wire,
-   the same way JSON import derives it from each Response's Text. */
+/* A page's response texts (no sub-lines), offered as wire labels. */
 export function responseChoicesForPage(page) {
 	var field = (page.fields || []).filter(function (f) { return f.key === 'Response(s)'; })[0];
 	if (!field) return [];
 	return parseResponses(field.value).map(function (r) { return r.text; }).filter(Boolean);
 }
 
-/* A line starting with a single ASCII hyphen ("- ") always starts a new
-   response -- never an em-dash ("—", U+2014) and never a bare label line
-   like "Action(s):", both of which are sub-content of the response above.
-   A bare line with neither prefix ALSO starts a new response, but only
-   when nothing is open yet: some hand-typed pages skip the dash entirely
-   when there's just one response choice to show, so the very first line
-   of the field is a plain sentence with no leading "- " at all. Once a
-   response is open, a bare line is content for it (or its labeled
-   section), not a second response -- see parseResponses(). */
+/* "- " starts a new response. So does a bare line when no response is open
+   yet (single-response pages often skip the dash). "— " lines and labels
+   are sub-content. */
 function isResponseStart(line, hasCurrent) {
 	if (/^-/.test(line)) return true;
 	return !hasCurrent && !/^—/.test(line) && !sectionLabel(line);
 }
 
-/* Recognizes a "Requirement(s):"/"Action(s):" label -- singular or plural,
-   with or without the parens, with or without a trailing colon -- whether
-   it leads its own bare line (hand-typed convention) or trails a "— "
-   sub-line dash. Returns the section it names plus whatever text follows
-   the label on the same line, or null if the line isn't a label at all. */
+/* Matches a "Requirement(s):" / "Action(s):" label in any common spelling,
+   with or without a "— " prefix. Returns {section, rest} or null. */
 var SECTION_LABEL_RE = /^(requirement|action)(s|\(s\))?\s*:?\s*/i;
 function sectionLabel(text) {
 	var m = SECTION_LABEL_RE.exec(text);
@@ -107,21 +73,12 @@ function sectionLabel(text) {
 
 /* Parses a Response(s) field's flat blob into structured
    {text, requirements[], actions[]} objects. This is the real QuestLines
-   Response shape (Text/Requirements/Actions), flattened into one string
-   for storage in page.fields -- see serializeResponses() for the inverse.
+   Response shape, stored flattened in page.fields (inverse:
+   serializeResponses()).
 
-   Real hand-typed data (as opposed to serializeResponses()'s own clean
-   "- text <br> — requires: X <br> — action" output) is looser than that
-   one convention in two ways: (1) a page with only one response choice
-   sometimes skips the leading "- " entirely, since there's nothing to
-   enumerate -- see isResponseStart(); (2) a "Requirement(s):"/"Action(s):"
-   label can lead a bare line of its own, with the actual items following
-   on their own (possibly "— "-prefixed, possibly bare) lines below it
-   until the next response or label -- so a section, once labeled, stays
-   active for whatever un-labeled lines follow. Only the narrower
-   "— requires: X" form (no active section yet) falls back to the
-   original per-line sniff,
-   for round-tripping serializeResponses()'s own machine-generated output. */
+   Also accepts looser hand-typed input: a first response with no "- "
+   (see isResponseStart()), and a label line that applies to the lines
+   after it until the next response or label. */
 export function parseResponses(raw) {
 	if (!raw) return [];
 	var responses = [];
@@ -134,7 +91,7 @@ export function parseResponses(raw) {
 			currentSection = null;
 			return;
 		}
-		if (!current) return; // a stray sub-line with no preceding "- " choice; nothing to attach it to
+		if (!current) return; // sub-line with no response to attach to
 		var content = line.replace(/^—\s*/, '');
 		var label = sectionLabel(content);
 		if (label) {
@@ -153,9 +110,7 @@ export function parseResponses(raw) {
 	return responses;
 }
 
-/* Inverse of parseResponses(): flattens structured response objects back
-   into the "- text<br>— requires: X<br>— action" blob stored in
-   page.fields. Drops any response with no text and no requirements/actions. */
+/* Inverse of parseResponses(). Drops empty responses. */
 export function serializeResponses(responses) {
 	var lines = [];
 	(responses || []).forEach(function (r) {
@@ -170,12 +125,7 @@ export function serializeResponses(responses) {
 	return lines.join('<br>');
 }
 
-/* Normalizes any <br>/<br/>/<BR> variant (regardless of surrounding
-   whitespace) to the canonical unpadded '<br>' token -- the same spacing
-   convention JSON import produces via jsonLinesToBr(). Markdown table cells
-   can't contain real newlines, so a hand-authored line break is always a
-   literal <br> tag typed into the cell; this keeps that tag readable as a
-   real line break to splitLines/parseResponses/renderBulletField alike. */
+/* Normalizes <br>/<br/>/<BR> variants and surrounding spaces to '<br>'. */
 export function normalizeBr(raw) {
 	if (!raw) return raw;
 	return raw.replace(/\s*<br\s*\/?>\s*/gi, '<br>');
@@ -204,11 +154,8 @@ export function renderBulletField(raw, tone) {
 	return html;
 }
 
-/* Card display for a Response(s) field: one top-level bullet per response
-   choice, with a labeled "Requires:"/"Actions:" sub-list only when that
-   response actually has one -- mirrors the real QuestLines Response shape
-   (Text/Requirements/Actions) instead of the generic dash/em-dash bullet
-   nesting renderBulletField produces for other fields. */
+/* Card display for Response(s): one bullet per response, with
+   "Requires:"/"Actions:" sub-lists when present. */
 export function renderResponses(responses) {
 	if (!responses || !responses.length) return '';
 	var html = '<ul class="bullet-list tone-response">';
@@ -245,11 +192,8 @@ export function renderSimpleList(items, tone) {
 	return html;
 }
 
-/* Splits a combined Note(s) cell into the discrete PageData fields it
-   actually represents per ql_data-models.md: Requirements, Objectives,
-   LoadActions. Anything left over (bare condition lines, "Npc req", etc.)
-   falls back to Requirements, since that's what the "Requirement(s):"
-   header in these notes has always meant. */
+/* Splits a Note(s) cell into Requirements, Objectives and LoadActions.
+   Unlabeled lines go to Requirements. */
 export function classifyNoteLines(raw) {
 	var lines = splitLines(raw);
 	var reqs = [], objs = [], loads = [];
@@ -266,31 +210,20 @@ export function classifyNoteLines(raw) {
 	return { reqs: reqs, objs: objs, loads: loads };
 }
 
-/* Case-insensitive alphabetical compare, used everywhere a list of world
-   items or quests is ordered by display name (World directory rows, search
-   results, linked-item lists, the Story-side linked-items panel). */
+/* Case-insensitive name compare for sorting. */
 export function compareNames(a, b) {
 	return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' });
 }
 
-/* Turns a display name into a lowercase_snake_case filename stem, for
-   export filenames/foldernames that should read as the thing's name
-   rather than its internal id (see exportQuest/exportQuestline in
-   src/export/export-actions.js). */
+/* Display name -> lowercase_snake_case, for export file/folder names. */
 export function slugify(name) {
 	return (name || '').toLowerCase().trim()
 		.replace(/[^a-z0-9]+/g, '_')
 		.replace(/^_+|_+$/g, '') || 'untitled';
 }
 
-/* Reduces a raw field value to plain, matchable text: <br> tags become
-   spaces, bold/italic markdown markers are dropped (keeping their
-   contents), and the same STYLE_TAG_RE used by formatInline strips
-   {b}/{i}/{m}/{/}/{#hex}
-   wrapping -- so "{#ca9d6e}{b}Herald of Port Haven{/}{/}" reduces to plain
-   "Herald of Port Haven" for name-matching (see suggestLinks in
-   src/import/link-suggestions.js). Real variable placeholders like
-   {username} are left in place, same as formatInline. */
+/* Plain text for name matching (see suggestLinks): <br> becomes a space,
+   and markdown markers and style tags are removed. Variables are kept. */
 export function plainTextForMatching(raw) {
 	if (!raw) return '';
 	var t = raw.replace(/<br\s*\/?>/gi, ' ');

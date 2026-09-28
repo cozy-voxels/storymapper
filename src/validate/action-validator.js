@@ -65,9 +65,8 @@ function validateGlobalAction(parts, path, report){
   }
 }
 
-// See requirement-validator.js's isKnownRequirement note -- same idea for
-// actions: with no server-side registry, anything unrecognised always
-// warns unless a caller supplies its own checker.
+// Unrecognised actions warn unless isKnownAction accepts them (see
+// isKnownRequirement).
 export function validateAction(action, path, report, isKnownAction){
   if(action === null || action === undefined || action.trim() === ''){
     report.error(path, 'Action must be a non-empty string.');
@@ -76,7 +75,7 @@ export function validateAction(action, path, report, isKnownAction){
   var parts = action.split(':');
   var type = parts[0];
   var typeLc = type.toLowerCase();
-  if(action.indexOf('{') !== -1) return; // runtime-interpolated value, can't statically validate
+  if(action.indexOf('{') !== -1) return; // interpolated at runtime
 
   switch(typeLc){
     case 'queststarted': case 'questcompleted': case 'questremoved':

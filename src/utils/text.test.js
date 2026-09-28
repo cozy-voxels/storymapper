@@ -189,10 +189,8 @@ describe('parseResponses', () => {
   });
 
   it('treats a leading line with no dash at all as the single response, when a page only has one choice', () => {
-    // Real fixture, from data/storymapper-export-2026-09-13.json's
-    // edme_default page -- with only one response to show, the author
-    // skipped the "- " entirely, which previously made the whole response
-    // invisible (no line matched, so parseResponses returned []).
+    // From data/storymapper-export-2026-09-13.json (edme_default): a single
+    // response with no leading "- ".
     const raw = "You're rather odd, you know.<br> Action(s): <br> — chat:Edme will have more to share soon.";
     expect(parseResponses(raw)).toEqual([
       { text: "You're rather odd, you know.", requirements: [], actions: ['chat:Edme will have more to share soon.'] },
@@ -204,10 +202,8 @@ describe('parseResponses', () => {
   });
 
   it('handles hand-typed data: real newlines between responses, and a bare "Action(s):"/"Requirement(s):" label line whose items follow on their own (possibly un-prefixed) lines', () => {
-    // Real fixture, from data/storymapper-export-2026-09-13.json's
-    // broomseller_event_hub page -- mixes <br> and literal \n as response
-    // separators, and labels a section with its own bare line rather than
-    // repeating "— requires:"/"— action" on every item.
+    // From data/storymapper-export-2026-09-13.json (broomseller_event_hub):
+    // mixed <br> and \n separators, and bare section label lines.
     const raw =
       '- What\'s the difference between the brooms? <br> Action(s): <br> — page:broomseller_event_broom_types\n' +
       '- How do I craft a **starweave broom**? <br> — Requirement(s): Does NOT have requisite tufts and/or sticks <br> — Action(s): page:broomseller_event_crafting\n' +

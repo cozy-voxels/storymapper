@@ -1,37 +1,23 @@
 import { splitLines, parseResponses } from '../utils/text.js';
 
 /* ================= JSON quest export (QuestLines mod format) =================
-   The inverse of buildQuestFromJson (src/import/quest-json-import.js) --
-   turns one of this app's internal quest records back into the real
-   QuestLines quest JSON shape, per QUEST_GUIDE.md / ql_data-models.md.
-   Deliberately excludes canvas-only data (page x/y, connections/arrows)
-   and World/setting data -- neither has any equivalent in the real
-   schema, and connections are re-derived here from the Response(s)
-   field text instead (the same text that findPageRefs/buildQuestFromJson
-   originally encoded them into on import). */
+   Inverse of buildQuestFromJson. Leaves out layout, arrows and World
+   data; page links come from the Response(s) text instead. */
 
 function fieldValue(fields, key){
   var match = (fields || []).filter(function(f){ return f.key.toLowerCase() === key; })[0];
   return match ? match.value : undefined;
 }
 
-/* Reverses jsonLinesToBr(): the app displays a multi-line Dialog/
-   JournalText field as '<br>'-joined text, the real schema wants a
-   plain string with real newlines. */
+/* Inverse of jsonLinesToBr(): '<br>' back to newlines. */
 function brToNewlines(raw){
   if(!raw) return undefined;
   return raw.split(/\s*<br\s*\/?>\s*/i).join('\n');
 }
 
-/* Reverses the Response(s) field encoding buildQuestFromJson writes:
-   each response is a "- Text" line, optionally followed by "— requires: X"
-   lines (-> Requirements) and other "— Y" lines (-> Actions, verbatim).
-   Note this only recovers real Requirements/Actions for quests that were
-   JSON-imported (or hand-authored using real QL action/requirement
-   strings after "— ") -- a quest hand-authored with prose annotations
-   there (e.g. "— Starts the_quest quest") will export those prose lines
-   as literal (invalid) Actions, same as if they'd been typed into a real
-   quest file's Responses.Actions by hand. */
+/* Parses Response(s) text back into Responses. Hand-written prose sub-lines
+   (e.g. "— Starts the_quest quest") are exported as-is and will be
+   invalid Actions. */
 function parseResponseField(raw){
   if(!raw) return undefined;
   var responses = parseResponses(raw).map(function(r){
@@ -46,11 +32,8 @@ function parseResponseField(raw){
 function serializePage(page){
   var fields = page.fields || [];
   var out = {};
-  // Always present: falls back to the pageId itself for a page that was
-  // imported with no real Name (e.g. an AutoTrigger page) -- matching
-  // buildQuestFromJson's own import-side fallback, though that means an
-  // originally Name-less page will re-export WITH a synthetic Name. Known,
-  // narrow (AutoTrigger-only) limitation, not fixed here.
+  // Falls back to pageId, so a page imported without a Name (e.g.
+  // AutoTrigger) exports with one. Known limitation.
   out.Name = page.title || page.pageId;
   var autoTrigger = fieldValue(fields, 'autotrigger');
   if(autoTrigger === 'true') out.AutoTrigger = true;
@@ -71,9 +54,8 @@ function serializePage(page){
   return out;
 }
 
-/* Builds the real QuestLines-format quest object for one quest record.
-   `questlineName`, if the quest belongs to one, is the questline's own
-   display name (QuestlineTitle) -- not stored on the quest record itself. */
+/* Builds the QuestLines quest object. `questlineName` becomes
+   QuestlineTitle. */
 export function serializeQuestToJson(quest, questlineName){
   var out = {};
   if(quest.questlineId){
@@ -92,19 +74,14 @@ export function serializeQuestToJson(quest, questlineName){
   return out;
 }
 
-/* Real quest files escape a small set of characters as \uXXXX rather than
-   emitting them literally (QUEST_GUIDE.md's "Escape special characters"
-   rule: curly apostrophes, angle brackets, ampersands) -- JSON.stringify
-   doesn't do this on its own, so it's a post-process over the finished
-   string. Safe here because none of these four characters can appear as
-   JSON structural syntax outside of a string value. */
+/* Escapes ’ < > & as \uXXXX, as QuestLines files do. Safe on the whole
+   string since none of these are JSON syntax. */
 var ESCAPES = {'’': '\\u2019', '<': '\\u003c', '>': '\\u003e', '&': '\\u0026'};
 function escapeSpecialChars(json){
   return json.replace(/[’<>&]/g, function(ch){ return ESCAPES[ch]; });
 }
 
-/* The actual file contents to write for one quest -- 2-space indentation
-   per QUEST_GUIDE.md's file & folder structure rule. */
+/* File contents for one quest, 2-space indented. */
 export function questToJsonString(quest, questlineName){
   return escapeSpecialChars(JSON.stringify(serializeQuestToJson(quest, questlineName), null, 2));
 }

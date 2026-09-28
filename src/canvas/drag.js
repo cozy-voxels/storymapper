@@ -8,27 +8,22 @@ import { connecting, startConnecting, stopConnecting, updateTempWire, nearestSid
 import { responseChoicesForPage } from '../utils/text.js';
 
 /* ---- empty-canvas mousedown (editor only) ----
-   Plain panning itself lives in pan-zoom.js (shared with the read-only
-   viewer); this handles the editor-only parts of the same gesture. */
+   Panning lives in pan-zoom.js; this adds the editor-only behavior. */
 elViewport.addEventListener('mousedown', function(e){
   if(isPanExcludedTarget(e.target)) return;
-  // Shift-drag on empty canvas: draw a lasso instead of panning, to select
-  // several cards for a temporary group move (see startMarquee below).
-  // pan-zoom.js's own mousedown skips shift-drags for exactly this reason.
+  // Shift-drag draws a lasso instead of panning (pan-zoom.js skips shift-drags).
   if(e.shiftKey){
     startMarquee(e.clientX, e.clientY);
     return;
   }
   if(state.selectedConn){ state.selectedConn = null; renderWires(); }
-  // A plain click on empty canvas drops the temp group too, same as
-  // clicking away from anything else selected on the canvas.
+  // A plain click also clears the lasso selection.
   if(state.selectedCardIds.size){ state.selectedCardIds.clear(); renderAll(); }
 });
 
-/* ---- lasso (shift-drag) multi-select: a temporary "group" for moving
-   several cards at once. Unlike a Questline, this selection is pure UI
-   state — never written to the store, and cleared on every quest switch,
-   Escape, or a plain click on empty canvas. ---- */
+/* ---- lasso (shift-drag) multi-select for moving several cards at once.
+   UI state only: never saved, and cleared on quest switch, Escape, or a
+   click on empty canvas. ---- */
 var marqueeDrag = null;
 function startMarquee(clientX, clientY){
   marqueeDrag = {startX: clientX, startY: clientY};
@@ -47,9 +42,8 @@ function updateMarquee(clientX, clientY){
   elMarqueeBox.style.width = (x1 - x0) + 'px';
   elMarqueeBox.style.height = (y1 - y0) + 'px';
 }
-// Estimated card height, same reasoning as fitViewToPages: actual height
-// is content-dependent and only known post-render, so this is approximate
-// — good enough for "does the lasso overlap this card", not pixel-perfect.
+// Fallback card height when the card isn't rendered; close enough for
+// lasso overlap.
 var CARD_H_EST_SELECT = 220;
 function finishMarquee(clientX, clientY){
   var a = toWorld(marqueeDrag.startX, marqueeDrag.startY);
@@ -67,10 +61,8 @@ function finishMarquee(clientX, clientY){
   renderAll();
 }
 
-/* ---- section dragging (whole-questline view: drag a quest's section
-   box to move every one of that quest's pages together, keeping their
-   positions relative to each other — full container behavior, not just
-   the label) ---- */
+/* ---- section dragging (whole-questline view): moves all of a quest's
+   pages together ---- */
 var sectionDrag = null;
 document.getElementById('sections-layer').addEventListener('mousedown', function(e){
   var box = e.target.closest('.quest-section');
@@ -89,10 +81,7 @@ document.getElementById('sections-layer').addEventListener('mousedown', function
 
 /* ---- card dragging ---- */
 var cardDrag = null;
-// Dragging a card that's part of an active lasso selection (2+ cards)
-// moves the whole temp group together, keeping their relative positions —
-// same idea as sectionDrag above, but for an ad-hoc selection rather than
-// a whole Questline's pages.
+// Dragging a card in a lasso selection of 2+ cards moves the whole selection.
 var groupDrag = null;
 elCardsLayer.addEventListener('mousedown', function(e){
   var handle = e.target.closest('.handle');
@@ -148,17 +137,14 @@ document.addEventListener('mousemove', function(e){
   if(cardDrag){
     var page = pageById(cardDrag.id);
     var wp = toWorld(e.clientX, e.clientY);
-    // No lower bound: a card can be dragged to any x/y, including
-    // negative — clamping to 0 here used to make the canvas origin feel
-    // like a wall nothing could be pushed past.
+    // Not clamped: negative x/y is allowed.
     page.x = wp.x - cardDrag.offX;
     page.y = wp.y - cardDrag.offY;
     var el = cardEl(page.id);
     el.style.left = page.x + 'px';
     el.style.top = page.y + 'px';
     renderWires();
-    // keep a page's section box tightly wrapped even when it's dragged
-    // on its own (not as part of a whole-section drag)
+    // keep the section box wrapped around a card dragged on its own
     if(state.activeQuestlineId) renderSections();
     return;
   }
@@ -174,8 +160,7 @@ document.addEventListener('mousemove', function(e){
     });
     renderWires();
     renderSections();
-    // renderSections() rebuilds the boxes from scratch, so re-apply the
-    // "actively dragging" cursor state to the one the user is holding
+    // renderSections() rebuilds the boxes, so re-apply .dragging
     var draggingBox = document.querySelector('.quest-section[data-quest-id="' + sectionDrag.questId + '"]');
     if(draggingBox) draggingBox.classList.add('dragging');
     return;
@@ -207,17 +192,8 @@ document.addEventListener('mouseup', function(e){
     sectionDrag = null;
   }
   if(connecting){
-    // e.target alone is whatever the browser's normal hit-test resolves
-    // to — which, when two cards are placed close together (exactly the
-    // arrangement someone reaches for when they want a tight top-to-top
-    // connection), is very often the card being dragged FROM: it and the
-    // target can end up overlapping by a few pixels, and since both share
-    // the same z-index, DOM order decides the winner regardless of which
-    // one actually makes sense here. elementsFromPoint returns the whole
-    // stack at that point, so this can skip straight past the source card
-    // (and past anything else in the way) to the target underneath,
-    // rather than the drop silently doing nothing because the wrong card
-    // happened to be on top.
+    // When cards overlap, e.target is often the source card. Use the full
+    // hit stack so the drop can skip past it to the target underneath.
     var hitStack = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [e.target];
     var handleTarget = null, targetCardEl = null;
     for(var hi = 0; hi < hitStack.length; hi++){
@@ -239,20 +215,13 @@ document.addEventListener('mouseup', function(e){
       var fromPage = pageById(connecting.fromId);
       var dropWp = toWorld(e.clientX, e.clientY);
       var toSide = handleTarget ? handleTarget.dataset.side : nearestSide(toPage, dropWp.x, dropWp.y);
-      // Directed, not undirected: a submenu page that leads back to the
-      // page that opened it (very common — "Got it." returning to a menu)
-      // is two separate, legitimate arrows, one each way. This used to
-      // treat A->B and B->A as the same connection, so once one direction
-      // existed, drawing the other direction silently did nothing — no
-      // error, the drag just ended with no new arrow, no matter which
-      // side you dropped on, since it never got far enough to look at
-      // sides at all. Only reject an exact repeat of the same direction.
+      // Directed: A->B and B->A are separate arrows (e.g. a submenu
+      // returning to its menu). Only reject an exact repeat.
       var exists = state.connections.some(function(c){
         return c.from === connecting.fromId && c.to === toId;
       });
-      // A connection between pages tagged with different source quests
-      // (only possible in a whole-questline view) is questline-level data,
-      // not part of either quest's own dialog flow — flag it as such.
+      // Pages from different quests (whole-questline view only): this is a
+      // questline-level cross-quest arrow.
       var isCross = !!(fromPage._questId && toPage._questId && fromPage._questId !== toPage._questId);
       if(!exists){
         var newConn = {
@@ -262,11 +231,8 @@ document.addEventListener('mouseup', function(e){
         };
         if(isCross) newConn._cross = true;
         state.connections.push(newConn);
-        // Cross-quest arrows get their label from a quest-state gate on
-        // import, not from response text, so this only applies same-quest.
-        // One response: no real choice to make, so just use it. More than
-        // one: ask, since which response this particular arrow represents
-        // isn't otherwise obvious once several exit the same card.
+        // Same-quest only (cross-quest labels come from import). Use the
+        // only response, or ask which one when there are several.
         if(!isCross){
           var respChoices = responseChoicesForPage(fromPage);
           if(respChoices.length === 1){

@@ -1,8 +1,5 @@
-/* Loading/switching the live canvas `state` to and from the store. These
-   functions didn't map cleanly onto any single file in the prescribed
-   structure (they're used by boot, by file import, and by the library
-   alike, and are neither pure markdown/JSON data transforms nor pure
-   store CRUD) — see the refactor report for that judgment call. */
+/* Loads the live canvas `state` from the store and switches between
+   quests and questlines. Used by boot, file import, and the library. */
 import { state, loadStore, saveStore, genId, orderedQuestlineMemberIds } from './store.js';
 import { elViewport } from '../dom.js';
 import { parseMarkdownTables, tablesToPages, layoutPages } from '../import/markdown-import.js';
@@ -29,16 +26,9 @@ function sequentialConnections(pages){
   return conns;
 }
 
-/* Fits pan/zoom so every page's bounding box is framed in the viewport —
-   called every time a quest or questline is opened from the library,
-   rather than trusting a remembered or fixed-default pan/zoom. A stored
-   position can point at empty space (most concretely: a quest saved back
-   from the whole-questline view, whose pages can sit thousands of pixels
-   down its stacked layout — see persistCurrentQuestline), and a fixed
-   default doesn't help once a quest's layout has grown past one screen.
-   Card height is content-dependent and only known post-render, so this
-   uses a fixed estimate — approximate framing, not pixel-perfect, is the
-   goal here. */
+/* Sets pan/zoom to frame all pages. Runs on every open, since a saved
+   camera position can point at empty space. Card height is estimated,
+   so the framing is approximate. */
 export function fitViewToPages(pages){
   if(!pages || !pages.length){
     state.pan = {x: 60, y: 40};
@@ -56,11 +46,7 @@ export function fitViewToPages(pages){
   var PAD = 60;
   var contentW = (maxX - minX) + PAD * 2;
   var contentH = (maxY - minY) + PAD * 2;
-  // elViewport may still be display:none at this point (switchToQuest and
-  // switchToQuestline now show it first, but this stays defensive in case
-  // that ever changes) — clientWidth/Height read 0 then, and 0 is falsy,
-  // so this quietly falls back to an assumed reasonable window size rather
-  // than computing a zoom of Infinity.
+  // Size reads 0 if the viewport is hidden; fall back to a default size.
   var vw = elViewport.clientWidth || 1000;
   var vh = elViewport.clientHeight || 700;
   var zoom = Math.min(vw / contentW, vh / contentH, 1.25);
@@ -78,9 +64,7 @@ export function loadFromMarkdown(md, meta){
   var tables = parseMarkdownTables(md);
   var pages = tablesToPages(tables);
   layoutPages(pages);
-  // tablesToPages() already assigned each page.id from the global
-  // counter (state.nextPageId) — that counter persists across quest
-  // switches now, so ids stay unique store-wide; never reset it here.
+  // Page ids come from the global state.nextPageId counter; never reset it.
   state.pages = pages;
   state.connections = sequentialConnections(pages);
   state.trash = (meta && meta.trash) || [];
@@ -102,13 +86,8 @@ export function restoreQuest(quest){
   state.pages = quest.pages || [];
   state.connections = quest.connections || [];
   state.trash = quest.trash || [];
-  // nextPageId/nextConnId are NOT read from the quest record — they are a
-  // global counter (state.nextPageId/nextConnId) set once at boot/switch
-  // time from the store and never reset per-quest, so ids stay unique
-  // even when several quests' pages are shown together in a questline view.
-  // Pan/zoom are recomputed to frame the actual pages every time, rather
-  // than trusting the quest's remembered camera position (see
-  // fitViewToPages — a remembered position can point at empty space).
+  // Id counters are global (from the store), not per-quest. Pan/zoom are
+  // recomputed rather than restored (see fitViewToPages).
   fitViewToPages(state.pages);
   state.questId = quest.id;
   state.questName = quest.name || 'Untitled Quest';
@@ -123,28 +102,12 @@ export function restoreQuest(quest){
   refreshLinkedItemsPanelIfOpen();
 }
 
-/* Lays out a whole questline's member quests as separate blocks. Section
-   box geometry itself is NOT computed here — it's derived from the live
-   DOM in renderSections() so it always tightly wraps the actual
-   (dynamically sized) cards. */
-/* Stacks each member quest's pages into its own block on the shared
-   questline canvas — WITHOUT touching their layout relative to each
-   other. This used to call layoutPages() on every member unconditionally,
-   which regenerated a fresh grid from scratch every single time the
-   questline view opened, silently discarding any hand-arranged layout the
-   pages already had (from a prior edit, or even just from import). Now it
-   only ever translates each quest's existing block as a whole — layout
-   itself is decided once, at import or by hand, and preserved from then
-   on; this function's only job is keeping quests from overlapping.
+/* Moves each member quest's pages as a block so sections don't overlap.
+   Pages keep their positions relative to each other. Section boxes are
+   drawn later from the DOM by renderSections().
 
-   savedOffsets (questId -> {x, y}) is where a section was last dragged
-   to, restored via persistCurrentQuestline()/switchToQuestline() below —
-   without it, every reopen of a questline used to fall back to this
-   function's own default vertical stack, silently discarding any manual
-   rearrangement. A member with no saved offset yet (brand new to the
-   questline, or from data saved before this existed) still gets that
-   default stacked position, placed below the lowest point reached so far
-   so it doesn't land on top of an already-positioned section. */
+   savedOffsets (questId -> {x, y}) restores where each section was last
+   dragged. Members without one are stacked below the previous section. */
 function layoutQuestlineSections(members, savedOffsets){
   savedOffsets = savedOffsets || {};
   var y = 40;
@@ -171,9 +134,7 @@ function layoutQuestlineSections(members, savedOffsets){
   });
 }
 
-/* Opens a single quest by id (unchanged single-quest behavior). Flushes
-   whatever is currently on the canvas first so a rename made just before
-   switching isn't lost. */
+/* Opens a single quest by id, saving the current canvas first. */
 export function switchToQuest(id){
   closeConnLabelChooser();
   if(state.questId || state.activeQuestlineId) persistCurrent();
@@ -182,9 +143,7 @@ export function switchToQuest(id){
   if(!quest) return;
   state.nextPageId = store.nextPageId;
   state.nextConnId = store.nextConnId;
-  // Show the canvas before restoring, not after — restoreQuest's
-  // fitViewToPages needs the viewport's real on-screen size, which reads
-  // as 0 while it's still display:none.
+  // Show the canvas first: fitViewToPages needs the viewport's real size.
   showCanvasView();
   restoreQuest(quest);
   store.activeQuestId = id;
@@ -193,15 +152,10 @@ export function switchToQuest(id){
   notifyViewChange();
 }
 
-/* Opens an entire questline: merges every member quest's pages,
-   connections, and trash into one canvas, tagging each entry with its
-   source quest (_questId) so it can be split back apart on save, and
-   lays out each quest's pages as a distinct block for section rendering. */
-/* Returns true on success. Can fail if the questline was deleted from
-   under it, or (e.g. after reassigning its only quest elsewhere) it no
-   longer has any member quests — callers must handle a false return
-   rather than assume the canvas switched, since leaving state untouched
-   is safer than showing a blank canvas for a questline with nothing in it. */
+/* Opens a whole questline on one canvas. Member pages and trash are tagged
+   with _questId so persistCurrentQuestline() can split them back apart.
+   Returns false, leaving state unchanged, if the questline is missing or
+   has no member quests. */
 export function switchToQuestline(qlId){
   closeConnLabelChooser();
   if(state.questId || state.activeQuestlineId) persistCurrent();
@@ -221,10 +175,8 @@ export function switchToQuestline(qlId){
     (q.connections || []).forEach(function(c){ connections.push(c); });
     (q.trash || []).forEach(function(t){ t._questId = qid; trash.push(t); });
   });
-  // Cross-quest connections are questline-level data, kept separate from
-  // any single quest's own connections — tag them so rendering can style
-  // them distinctly and persistCurrentQuestline() knows to route them back
-  // to the questline record (not any one member quest) on save.
+  // Tag questline-level connections so they render differently and are
+  // saved back to the questline record.
   (ql.connections || []).forEach(function(c){ c._cross = true; connections.push(c); });
 
   state.pages = pages;
@@ -238,9 +190,7 @@ export function switchToQuestline(qlId){
   state.questlineId = null;
   state.activeQuestlineId = qlId;
 
-  // Show the canvas before framing it — fitViewToPages needs the
-  // viewport's real on-screen size, which reads as 0 while it's still
-  // display:none (same reasoning as switchToQuest).
+  // Show the canvas first: fitViewToPages needs the viewport's real size.
   showCanvasView();
   layoutQuestlineSections(members, ql.sectionPositions);
   fitViewToPages(pages);

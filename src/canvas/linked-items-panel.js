@@ -1,13 +1,6 @@
 /* ================= linked items sidebar (canvas) =================
-   The aggregate of every NPC/Location linked from any page currently on
-   the canvas -- state.pages for a single quest, or the merged set of
-   every member quest's pages when a whole questline is open -- shown
-   deliberately NOT per-card (the same NPC often recurs across many
-   pages, which would be repetitive there). A toggleable sidebar docked
-   to the left of the canvas -- not a modal -- so it stays visible
-   alongside the quest/questline while working, rather than blocking it
-   the way the Trash/Validate panels do (those are genuinely modal
-   actions; this is a reference panel meant to be left open). */
+   Toggleable, non-modal sidebar listing every NPC/Location linked from
+   the pages on the canvas. */
 import { state, loadStore } from '../state/store.js';
 import { elLinkedItemsBtn, elLinkedItemsSidebar, elLinkedItemsSidebarClose, elLinkedItemsList } from '../dom.js';
 import { escapeHtml } from '../utils/text.js';
@@ -36,11 +29,8 @@ export function renderLinkedItemsList(){
     sectionHtml('Locations', grouped.locations, 'locations');
 }
 
-/* Called after anything that can change which quest/pages are on the
-   canvas (a page's links edited and saved, a different quest switched
-   into) so the sidebar never shows a stale quest's data while left open
-   across those actions -- the whole point of it being a sidebar instead
-   of a modal is that it can stay open through them. */
+/* Call after the canvas pages or their links change, so an open sidebar
+   stays current. */
 export function refreshLinkedItemsPanelIfOpen(){
   if(elLinkedItemsSidebar.classList.contains('open')) renderLinkedItemsList();
 }

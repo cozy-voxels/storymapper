@@ -36,9 +36,7 @@ function rowMenuHtml(items){
     '</div>';
 }
 
-/* The read-only viewer's version of a quest row: no rename, status as a
-   static badge, and only Open plus a direct Export (no ⋮ menu, since
-   everything else in it -- move, duplicate, delete -- is an edit). */
+/* Read-only viewer quest row: static status badge, Open and Export only. */
 function readOnlyQuestRowHtml(quest){
   return '<div class="quest-row" data-quest-id="' + quest.id + '">' +
       '<span class="quest-name">' + escapeHtml(quest.name || 'Untitled Quest') + '</span>' +
@@ -48,10 +46,8 @@ function readOnlyQuestRowHtml(quest){
     '</div>';
 }
 
-/* "Reorder quests" mode (see startReordering below): while on, questline
-   heads and questline member rows render draggable with a grip, and every
-   other library action is hidden (CSS, via #library-view.reordering) and
-   ignored (the click handlers below bail out early). */
+/* While reordering (see startReordering), rows are draggable and all other
+   library actions are hidden and ignored. */
 var reordering = false;
 var DRAG_GRIP_HTML = '<span class="drag-grip" aria-hidden="true">&#10303;</span>';
 
@@ -73,13 +69,8 @@ function questRowHtml(store, quest){
     '</div>';
 }
 
-/* Soft delete for a whole quest, mirroring removePage's page-level soft
-   delete: the quest's full record (its pages, connections, and own page
-   trash) moves out of store.quests and into store.trashedQuests rather
-   than being discarded, so it's always recoverable from the Restore
-   panel. Its questlineId is left untouched on the stored record — if
-   that questline still exists at restore time, the quest quietly resumes
-   membership; if not, it comes back standalone (see restoreQuestFromTrash). */
+/* Soft delete: moves the quest record to store.trashedQuests. questlineId
+   is kept, so a restored quest rejoins its questline if it still exists. */
 function trashQuest(questId){
   var store = loadStore();
   var quest = store.quests[questId];
@@ -90,13 +81,8 @@ function trashQuest(questId){
   saveStore(store);
 }
 
-/* Exact copy of a quest -- same pages/content/layout/linked items and
-   same connections/arrows, staying in the same questline (if any) --
-   named "{name} Copy" so there's no naming prompt to get in the way.
-   Pages and connections get freshly-minted ids off the same global
-   counters everything else uses (see nextPageId/nextConnId in store.js),
-   with a from/to id remap so the copied connections still point at the
-   copied pages instead of the originals. */
+/* Copies a quest as "{name} Copy" in the same questline. Pages and
+   connections get new ids, and connections are remapped to the copied pages. */
 function duplicateQuest(questId){
   var store = loadStore();
   var quest = store.quests[questId];
@@ -155,12 +141,8 @@ export function restoreQuestFromTrash(index){
   saveStore(store);
 }
 
-/* Soft delete for a questline. Unlike a quest, a questline is just a
-   grouping shell — deleting it removes that shell but leaves its member
-   quests intact, reassigning them to Standalone (same as manually
-   clearing each one's questline dropdown) rather than dragging them into
-   the trash too. Restoring the questline brings back the empty shell;
-   any quests that were in it stay standalone unless reassigned by hand. */
+/* Soft delete for a questline. Its quests become standalone and stay
+   standalone if the questline is restored. */
 function trashQuestline(qlId){
   var store = loadStore();
   var ql = store.questlines[qlId];
@@ -246,7 +228,7 @@ function startInlineRename(labelEl, onSave){
   });
 }
 
-// The create buttons below don't exist in the read-only viewer.
+// Create buttons don't exist in the read-only viewer.
 var elNewQuestlineBtn = document.getElementById('new-questline-btn');
 if(elNewQuestlineBtn) elNewQuestlineBtn.addEventListener('click', function(){
   var store = loadStore();
@@ -256,10 +238,7 @@ if(elNewQuestlineBtn) elNewQuestlineBtn.addEventListener('click', function(){
   renderLibrary();
 });
 
-// Unlike a new questline (just a grouping shell, nothing to look at until
-// quests are added to it), a brand-new quest is immediately useful to
-// start filling in -- so this opens straight onto its canvas, same as
-// finishing a file import, rather than leaving it sitting in the library.
+// A new quest opens straight onto its canvas.
 var elNewQuestBtn = document.getElementById('new-quest-btn');
 if(elNewQuestBtn) elNewQuestBtn.addEventListener('click', function(){
   var store = loadStore();
@@ -280,10 +259,8 @@ if(elNewQuestBtn) elNewQuestBtn.addEventListener('click', function(){
   switchToQuest(id);
 });
 
-// Row/questline-head "⋮" menus: only one open at a time, closed by an
-// outside click, Escape, or (in the per-view click handlers below) after
-// a menu item completes its action -- mirroring the topbar "Options" menu
-// pattern in src/views.js.
+// "⋮" row menus: one open at a time, closed by an outside click, Escape,
+// or choosing an item.
 function closeAllRowMenus(except){
   document.querySelectorAll('.row-menu > [data-role="menu"]:not([hidden])').forEach(function(menu){
     if(menu === except) return;
@@ -310,8 +287,7 @@ function handleRowMenuToggle(e){
 
 elQuestlineGroups.addEventListener('click', function(e){
   if(reordering){
-    // Collapsing stays available so long questlines can be folded
-    // out of the way while dragging questlines around.
+    // Collapsing still works while reordering.
     var reorderHead = e.target.closest('.questline-head');
     if(reorderHead) toggleQuestlineCollapsed(reorderHead.closest('.questline-block'));
     return;
@@ -319,10 +295,8 @@ elQuestlineGroups.addEventListener('click', function(e){
   if(handleRowMenuToggle(e)) return;
   var nameEl = !READ_ONLY && e.target.closest('.questline-name');
   if(nameEl){
-    // Capture the questline id up front, before startInlineRename swaps
-    // nameEl out of the DOM for an <input> — once detached, nameEl has no
-    // parent chain left, so looking it up via nameEl.closest(...) inside
-    // the onSave callback (which runs later, after the swap) throws.
+    // Read the id now: startInlineRename detaches nameEl, so closest()
+    // would fail inside onSave.
     var qlIdForRename = nameEl.closest('.questline-block').dataset.questlineId;
     startInlineRename(nameEl, function(next){
       var store = loadStore();
@@ -381,12 +355,9 @@ elStandaloneQuests.addEventListener('click', function(e){
   handleQuestRowClick(e);
 });
 
-// A sandboxed artifact page can't rely on window.confirm() (it's silently
-// suppressed rather than shown), so any destructive action in the library
-// (deleting a quest or a questline) uses the same arm-then-confirm pattern
-// as the world item delete button below: the first click just puts that
-// one button into a "Confirm?" state for a few seconds, and only a second
-// click on the SAME still-armed button actually does it.
+// window.confirm() is suppressed in the sandboxed page, so destructive
+// actions use arm-then-confirm: the first click arms the button for a few
+// seconds, and a second click on the same button confirms.
 var armedDeleteBtn = null;
 var armedDeleteTimer = null;
 function resetArmedDelete(){
@@ -397,8 +368,7 @@ function resetArmedDelete(){
   armedDeleteBtn = null;
   if(armedDeleteTimer){ clearTimeout(armedDeleteTimer); armedDeleteTimer = null; }
 }
-// Returns true when this click is the confirming second click (caller
-// should perform the delete); false when it just armed the button.
+// Returns true on the confirming click, false when it only armed the button.
 function confirmDangerClick(btn){
   if(armedDeleteBtn === btn){
     resetArmedDelete();
@@ -479,12 +449,9 @@ elQuestlineGroups.addEventListener('change', handleStatusChange);
 elStandaloneQuests.addEventListener('change', handleStatusChange);
 
 /* ================= reorder mode =================
-   Drag-and-drop moves the DOM rows live; nothing is written until
-   "Finished reordering", which reads the final DOM order back into each
-   questline's and member quest's `order` (see orderedQuestlineIds in
-   store.js). Quests can only be dropped within their own questline's
-   list -- moving a quest to another questline is still "Move to
-   questline" in its row menu. */
+   Dragging moves DOM rows; "Finished reordering" saves the DOM order to
+   each questline's and quest's `order`. Quests can only move within their
+   own questline. */
 function startReordering(){
   if(READ_ONLY || reordering) return;
   reordering = true;
@@ -516,8 +483,7 @@ function finishReordering(){
 if(elReorderQuestsBtn) elReorderQuestsBtn.addEventListener('click', startReordering);
 if(elFinishReorderBtn) elFinishReorderBtn.addEventListener('click', finishReordering);
 
-// Leaving the library mid-reorder (e.g. the World pill) keeps the
-// arrangement rather than silently dropping it.
+// Leaving the library mid-reorder saves the order.
 onViewChange(function(){
   if(reordering && state.view !== 'library') finishReordering();
 });
