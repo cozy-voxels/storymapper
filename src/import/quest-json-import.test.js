@@ -51,7 +51,7 @@ describe('buildQuestFromJson', () => {
     // in the Response(s) text, in addition to driving the connection below.
     expect(built.pages[0].fields).toEqual([
       { key: 'Dialog', value: 'Hello' },
-      { key: 'Response(s)', value: '- Continue <br> — page:p_end' },
+      { key: 'Response(s)', value: '- Continue<br>— page:p_end' },
     ]);
     expect(built.connections).toEqual([
       { id: 'w1', from: built.pages[0].id, to: built.pages[1].id, fromSide: 'right', toSide: 'left', label: 'Continue' },

@@ -229,7 +229,7 @@ describe('serializeResponses', () => {
       { text: 'Maybe later.', requirements: [], actions: [] },
     ];
     const raw = serializeResponses(responses);
-    expect(raw).toBe('- Color me intrigued. <br> — requires: itemOwned:token <br> — Starts meet_the_mercs quest <br> - Maybe later.');
+    expect(raw).toBe('- Color me intrigued.<br>— requires: itemOwned:token<br>— Starts meet_the_mercs quest<br>- Maybe later.');
     expect(parseResponses(raw)).toEqual(responses);
   });
 
@@ -267,8 +267,8 @@ describe('renderResponses', () => {
 });
 
 describe('normalizeBr', () => {
-  it('normalizes any <br> variant/spacing to the canonical spaced token', () => {
-    expect(normalizeBr('a<br>b<br/>c<BR />d <br>  e')).toBe('a <br> b <br> c <br> d <br> e');
+  it('normalizes any <br> variant/spacing to the canonical unpadded token', () => {
+    expect(normalizeBr('a<br>b<br/>c<BR />d <br>  e')).toBe('a<br>b<br>c<br>d<br>e');
   });
 
   it('returns falsy input unchanged', () => {
@@ -284,8 +284,12 @@ describe('brToText / textToBr', () => {
 
   it('is stable across repeated save/reopen round trips', () => {
     const once = textToBr(brToText('a <br> b'));
-    expect(once).toBe('a <br> b');
-    expect(textToBr(brToText(once))).toBe('a <br> b');
+    expect(once).toBe('a<br>b');
+    expect(textToBr(brToText(once))).toBe('a<br>b');
+  });
+
+  it('writes <br> with no surrounding spaces, including adjacent blank-line breaks', () => {
+    expect(textToBr('a \n\n  b')).toBe('a<br><br>b');
   });
 
   it('strips padding already accumulated around <br> in stored values', () => {

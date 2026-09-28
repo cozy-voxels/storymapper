@@ -16,7 +16,7 @@ function fieldValue(fields, key){
 }
 
 /* Reverses jsonLinesToBr(): the app displays a multi-line Dialog/
-   JournalText field as ' <br> '-joined text, the real schema wants a
+   JournalText field as '<br>'-joined text, the real schema wants a
    plain string with real newlines. */
 function brToNewlines(raw){
   if(!raw) return undefined;

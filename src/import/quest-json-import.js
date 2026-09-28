@@ -10,7 +10,7 @@ import { serializeResponses } from '../utils/text.js';
    and {TBD} placeholders), so they'll show as raw text for now. */
 
 function jsonLinesToBr(s){
-  return String(s).replace(/\r\n|\r|\n/g, ' <br> ');
+  return String(s).replace(/[ \t]*(?:\r\n|\r|\n)[ \t]*/g, '<br>');
 }
 
 /* Finds every `page:<id>` action in an actions array — that's the real
@@ -62,9 +62,9 @@ export function buildQuestFromJson(qj){
       });
       fields.push({key: 'Response(s)', value: serializeResponses(responses)});
     }
-    if(pd.Requirements && pd.Requirements.length) fields.push({key: 'Requirements', value: pd.Requirements.join(' <br> ')});
-    if(pd.Objectives && pd.Objectives.length) fields.push({key: 'Objectives', value: pd.Objectives.join(' <br> ')});
-    if(pd.LoadActions && pd.LoadActions.length) fields.push({key: 'LoadActions', value: pd.LoadActions.join(' <br> ')});
+    if(pd.Requirements && pd.Requirements.length) fields.push({key: 'Requirements', value: pd.Requirements.join('<br>')});
+    if(pd.Objectives && pd.Objectives.length) fields.push({key: 'Objectives', value: pd.Objectives.join('<br>')});
+    if(pd.LoadActions && pd.LoadActions.length) fields.push({key: 'LoadActions', value: pd.LoadActions.join('<br>')});
     // Two real, if rare, page flags that predate this tool and aren't in
     // ql_data-models.md's schema table (only in QUEST_GUIDE.md's prose, or
     // not documented at all) -- always `true` when present in every real
